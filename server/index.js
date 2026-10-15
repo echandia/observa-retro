@@ -573,9 +573,14 @@ const server = createServer(async (req, res) => {
   }
 
   // ============================================================
-  // API: Audios de Prueba Disponibles en el Proyecto
+  // API: Audios de Prueba Disponibles en el Proyecto (Exclusivo Formadores)
   // ============================================================
   if (pathname === '/api/audios-prueba' && method === 'GET') {
+    const user = authenticateRequest(req);
+    if (!user || (user.role !== 'tutor' && user.role !== 'admin')) {
+      return sendJson(res, 403, { error: 'Los audios de prueba son exclusivos para formadores' });
+    }
+
     const audiosPruebaDir = join(rootDir, 'Audios de prueba');
     if (!existsSync(audiosPruebaDir)) return sendJson(res, 200, { files: [] });
 
@@ -606,7 +611,9 @@ const server = createServer(async (req, res) => {
 
   if (pathname === '/api/audios-prueba/cargar' && method === 'POST') {
     const user = authenticateRequest(req);
-    if (!user) return sendJson(res, 401, { error: 'No autorizado' });
+    if (!user || (user.role !== 'tutor' && user.role !== 'admin')) {
+      return sendJson(res, 403, { error: 'Los audios de prueba son exclusivos para formadores' });
+    }
 
     try {
       const body = await parseBody(req);

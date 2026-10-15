@@ -142,14 +142,25 @@ const App = {
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:14px;">
             <p class="meta" style="margin-bottom:8px; font-weight:600;">Accesos directos rápidos:</p>
             <div style="display:grid; gap:8px;">
-              <button class="btn secondary min" id="quick-login-prof-echandia" style="justify-content:flex-start; text-align:left;">
-                👨‍🏫 <b>Profesor Formador:</b> Dr. Eugenio Chandía Muñoz (Docente Responsable)
-              </button>
-              <button class="btn secondary min" id="quick-login-student-aude" style="justify-content:flex-start; text-align:left;">
-                🎓 <b>Estudiante Practicante:</b> Marcos Aude Villagra (Sec. 1 · RUT 19138115)
-              </button>
-              <button class="btn secondary min" id="quick-login-student-demo" style="justify-content:flex-start; text-align:left;">
-                📋 <b>Demostración guiada:</b> María Jesús Valenzuela (Clase analizada)
+              <div style="font-size:0.78rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Equipo Docente y Formadores:</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                <button class="btn secondary min" id="quick-login-prof-echandia" style="justify-content:flex-start; text-align:left; font-size:0.82rem; padding:6px 8px;">
+                  👨‍🏫 Dr. Eugenio Chandía (Docente)
+                </button>
+                <button class="btn secondary min" id="quick-login-jefe-hmorales" style="justify-content:flex-start; text-align:left; font-size:0.82rem; padding:6px 8px;">
+                  🏛️ Prof. Hernán Morales (Jefe Carrera)
+                </button>
+                <button class="btn secondary min" id="quick-login-prof-dgomez" style="justify-content:flex-start; text-align:left; font-size:0.82rem; padding:6px 8px;">
+                  👨‍🏫 Dr. David Gómez (UOH)
+                </button>
+                <button class="btn secondary min" id="quick-login-prof-spereira" style="justify-content:flex-start; text-align:left; font-size:0.82rem; padding:6px 8px;">
+                  👨‍🏫 Prof. Samuel Pereira (UCSC)
+                </button>
+              </div>
+
+              <div style="font-size:0.78rem; text-transform:uppercase; color:var(--muted); font-weight:700; margin-top:4px;">Estudiantes Practicantes:</div>
+              <button class="btn secondary min" id="quick-login-student-aude" style="justify-content:flex-start; text-align:left; font-size:0.84rem;">
+                🎓 Marcos Aude Villagra (Practicante Sec. 1 · RUT 19138115)
               </button>
             </div>
           </div>
@@ -188,7 +199,7 @@ const App = {
 
         <div class="user-badge">
           <b>${this.escapeHtml(u.name)}</b>
-          <span class="user-role-tag ${isTutor ? 'tutor' : ''}">${isTutor ? 'Profesor/a Formador/a' : 'Estudiante de Pedagogía'}</span>
+          <span class="user-role-tag ${isTutor ? 'tutor' : ''}">${isTutor ? (u.seccion || 'Profesor/a Formador/a') : 'Estudiante de Pedagogía'}</span>
         </div>
 
         ${studentSelectHtml}
@@ -214,12 +225,15 @@ const App = {
         </div>
 
         <div class="nav-section">
-          <h4>Evaluación y Trayectoria</h4>
+          <h4>Evaluación y Aprendizaje</h4>
           <button class="nav-btn ${this.state.view === 'trayectoria' ? 'active' : ''}" id="btn-nav-trayectoria">
             Trayectoria de competencias
           </button>
           <button class="nav-btn ${this.state.view === 'avance_reflexivo' ? 'active' : ''}" id="btn-nav-avance-ref">
             Avance en la reflexión
+          </button>
+          <button class="nav-btn ${this.state.view === 'guia' ? 'active' : ''}" id="btn-nav-guia">
+            📖 Guía del practicante
           </button>
           <button class="nav-btn ${this.state.view === 'marco' ? 'active' : ''}" id="btn-nav-marco">
             Marco curricular PPIII
@@ -243,11 +257,12 @@ const App = {
 
   renderTopBar() {
     const u = this.state.user;
+    const isTutor = u.role === 'tutor' || u.role === 'admin';
     return `
       <div class="top-bar">
         <div>
           <span style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; font-weight:600;">
-            ${u.role === 'tutor' ? 'Espacio de Formadores y Tutores Académicos' : 'Espacio de Aprendizaje Profesional del Practicante'}
+            ${isTutor ? 'Espacio de Formadores y Tutores Académicos' : 'Espacio de Aprendizaje Profesional del Practicante'}
           </span>
           <h2 style="margin:2px 0 0; color:var(--board);">
             ${this.state.view === 'dashboard' ? 'Panel de Intervenciones Pedagógicas' :
@@ -255,15 +270,18 @@ const App = {
               this.state.view === 'intervencion' && this.state.currentInterv ? this.escapeHtml(this.state.currentInterv.intervencion.contenido) :
               this.state.view === 'trayectoria' ? 'Trayectoria Longitudinal de Competencias' :
               this.state.view === 'avance_reflexivo' ? 'Evaluación del Avance en la Reflexión' :
+              this.state.view === 'guia' ? 'Guía de Trabajo del Practicante (Paso a Paso)' :
               this.state.view === 'estudiantes' ? 'Nómina Oficial y Gestión de Cursos' : 'Marco Curricular'}
           </h2>
         </div>
         <div class="row">
+          ${isTutor ? `
           <button class="btn secondary min" id="btn-config-ia-modal">
             ⚙️ Configurar Transcripción IA
           </button>
+          ` : ''}
           <button class="btn secondary min" id="btn-quick-switch-role">
-            Cambiar a rol ${u.role === 'tutor' ? 'Estudiante' : 'Formador/Tutor'}
+            Cambiar a rol ${isTutor ? 'Estudiante' : 'Formador/Tutor'}
           </button>
         </div>
       </div>
@@ -277,6 +295,7 @@ const App = {
     if (this.state.view === 'trayectoria') return this.renderTrayectoria();
     if (this.state.view === 'avance_reflexivo') return this.renderAvanceReflexivo();
     if (this.state.view === 'marco') return this.renderMarco();
+    if (this.state.view === 'guia') return this.renderGuia();
     if (this.state.view === 'estudiantes') return this.renderEstudiantes();
     return this.renderDashboard();
   },
@@ -311,8 +330,20 @@ const App = {
 
         ${!list.length ? `
           <div style="background:var(--surface); border:1px dashed var(--line); border-radius:8px; padding:32px; text-align:center;">
-            <p class="meta">Aún no hay intervenciones registradas para este practicante.</p>
-            <button class="btn secondary min" id="btn-dash-cargar-demo" style="margin-top:8px;">Cargar ejemplo demostrativo</button>
+            ${(this.state.user.role === 'tutor' || this.state.user.role === 'admin') ? `
+              <p class="meta">Aún no hay intervenciones registradas para este practicante.</p>
+              <button class="btn secondary min" id="btn-dash-cargar-demo" style="margin-top:8px;">Cargar ejemplo demostrativo</button>
+            ` : `
+              <div style="font-size:2rem; margin-bottom:8px;">🎓</div>
+              <h3 style="margin:0 0 6px; color:var(--board);">¡Bienvenido/a a tu Espacio de Práctica Pedagógica III!</h3>
+              <p class="lead" style="font-size:0.95rem; max-width:560px; margin:0 auto 16px;">
+                Aquí registrarás tus clases de aula, subirás tus planificaciones didácticas y realizarás tu diálogo reflexivo con el tutor inteligente.
+              </p>
+              <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                <button class="btn min" id="btn-dash-nueva-welcome">+ Cargar mi primera clase</button>
+                <button class="btn secondary min" id="btn-dash-ver-guia">📖 Ver Guía del Practicante</button>
+              </div>
+            `}
           </div>
         ` : `
           <div class="table-scroll">
@@ -357,6 +388,8 @@ const App = {
   },
 
   renderNueva() {
+    const isTutor = this.state.user && (this.state.user.role === 'tutor' || this.state.user.role === 'admin');
+
     return `
       <div style="max-width:880px;">
         <p class="lead">Sube la transcripción y el audio de la clase. Los archivos se guardarán de manera persistente en la plataforma.</p>
@@ -371,10 +404,11 @@ const App = {
               <span id="audio-upload-status" class="meta" style="color:var(--success);"></span>
             </label>
 
+            ${isTutor ? `
             <div style="background:var(--board-soft); border:1px solid rgba(27,73,67,0.18); border-radius:6px; padding:12px; margin-top:-6px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
-                <b style="font-size:0.88rem; color:var(--board);">📁 Audios de prueba detectados en tu carpeta:</b>
-                <small class="meta" style="color:var(--muted);">Haz clic para seleccionar una grabación de aula del proyecto</small>
+                <b style="font-size:0.88rem; color:var(--board);">📁 Grabaciones de prueba detectadas en el proyecto (Solo Formadores):</b>
+                <small class="meta" style="color:var(--muted);">Audios para calibración de formadores</small>
               </div>
               <div class="row" style="flex-wrap:wrap; gap:8px;" id="container-audios-prueba">
                 <button type="button" class="btn secondary min btn-audio-prueba-tag" data-file="Cordillera (1).m4a" style="font-size:0.84rem;">
@@ -388,30 +422,35 @@ const App = {
                 </button>
               </div>
             </div>
+            ` : ''}
 
             <div class="row" id="row-transcribir-audio" style="margin-top:-6px; margin-bottom:4px;">
               <button type="button" class="btn min" id="btn-transcribir-audio-ia" style="background:#1B4943; color:#fff;">
                 ✨ Transcribir audio automáticamente con IA
               </button>
+              ${isTutor ? `
               <button type="button" class="btn secondary min" id="btn-config-ia-shortcut">
                 ⚙️ Configurar API Key (Gemini/Whisper)
               </button>
+              ` : ''}
               <span id="transcribiendo-spinner" class="meta" style="font-weight:600; color:var(--board);"></span>
             </div>
 
             <label>Archivo de Transcripción (.docx de Teams/Zoom, .vtt, .srt, .txt, .json Whisper)
-              <span>Idealmente con marcas de tiempo [mm:ss] y separación de hablantes.</span>
+              <span>Opcional: Si ya tienes la transcripción en un archivo Word o texto.</span>
               <input type="file" id="input-trans-file" accept=".docx,.txt,.vtt,.srt,.json,.md" class="form-control">
               <span id="trans-file-status" class="meta" style="color:var(--board);"></span>
             </label>
 
             <label>O pega directamente la transcripción aquí:
-              <textarea id="input-trans-text" class="form-control" style="min-height:120px;" placeholder="[00:01:35] E1: 750.&#10;[00:01:38] Practicante: ¿Cómo lo obtuviste?"></textarea>
+              <textarea id="input-trans-text" class="form-control" style="min-height:120px;" placeholder="[00:01:35] Estudiante 1: 750.&#10;[00:01:38] Practicante: ¿Cómo lo obtuviste?"></textarea>
             </label>
 
             <div class="row">
               <button type="button" class="btn secondary min" id="btn-parse-text">Procesar texto pegado</button>
+              ${isTutor ? `
               <button type="button" class="btn secondary min" id="btn-cargar-ejemplo-1">Cargar Ejemplo 1 (Raíz Enésima .docx)</button>
+              ` : ''}
               <span id="trans-parse-count" class="meta"></span>
             </div>
 
@@ -1001,6 +1040,181 @@ const App = {
     `;
   },
 
+  renderGuia() {
+    return `
+      <div style="max-width:960px;" class="guia-container">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:20px; border-bottom:2px solid var(--board); padding-bottom:14px;">
+          <div>
+            <span style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; font-weight:700; letter-spacing:0.04em;">Manual Formativo de Uso</span>
+            <h1 style="margin:4px 0 6px; color:var(--board); font-size:1.8rem;">Guía de Trabajo para el Practicante</h1>
+            <p class="lead" style="margin:0; font-size:1rem;">
+              Plataforma Observa-Retro · Práctica Pedagógica III (ED1360C)<br>
+              <small>UCSC · Facultad de Educación · En colaboración con CIAE BASAL</small>
+            </p>
+          </div>
+          <button class="btn secondary" id="btn-imprimir-guia" style="align-self:center;">
+            🖨️ Imprimir / Guardar en PDF
+          </button>
+        </div>
+
+        <div style="background:#e8f4f2; border-left:4px solid var(--board); border-radius:6px; padding:16px 18px; margin-bottom:24px;">
+          <h3 style="margin:0 0 6px; color:var(--board); font-size:1.05rem;">🎯 Sentido Pedagógico y Formativo</h3>
+          <p style="margin:0; font-size:0.92rem; line-height:1.55; color:var(--ink);">
+            La plataforma <b>Observa-Retro</b> es un dispositivo de <b>acompañamiento formativo y diagnóstico</b>, no una herramienta punitiva o de calificación automática. Su propósito es ayudarte a mirar tu propia práctica docente a partir de <b>evidencias observables</b> de aula (lo que tú y tus estudiantes realmente dijeron e hicieron) y facilitar un diálogo reflexivo profundo con tus profesores formadores para la mejora continua de la enseñanza de la matemática.
+          </p>
+        </div>
+
+        <div style="display:grid; gap:20px;">
+
+          <!-- Paso 1: Preparación -->
+          <div class="comp-card" style="border-top:3px solid var(--board);">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <span style="background:var(--board); color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem;">1</span>
+              <h3 style="margin:0; font-size:1.15rem; color:var(--board);">Preparación de los Materiales de Aula</h3>
+            </div>
+            <p style="font-size:0.92rem; line-height:1.5; color:var(--ink); margin-bottom:12px;">
+              Antes de ingresar a la plataforma para registrar tu intervención, asegúrate de contar con:
+            </p>
+            <ul style="font-size:0.9rem; line-height:1.6; margin:0 0 8px 18px;">
+              <li><b>Grabación de audio de la clase:</b> Grabada con tu teléfono móvil o grabadora portátil (formatos soportados: <code>.mp3</code>, <code>.m4a</code>, <code>.wav</code>, <code>.webm</code>). Ubica el micrófono en un lugar estratégico para captar tanto tus intervenciones como las discusiones de los escolares.</li>
+              <li><b>Planificación didáctica oficial:</b> Archivo Word (<code>.docx</code>) o texto donde conste el objetivo de aprendizaje curricular, la tarea matemática prevista, las preguntas anticipadas y los momentos de la clase (inicio, desarrollo y cierre).</li>
+              <li><b>Resguardo ético:</b> Contar con las autorizaciones institucionales del establecimiento escolar para el registro con fines estrictamente formativos.</li>
+            </ul>
+          </div>
+
+          <!-- Paso 2: Ingreso y Carga -->
+          <div class="comp-card" style="border-top:3px solid var(--board);">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <span style="background:var(--board); color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem;">2</span>
+              <h3 style="margin:0; font-size:1.15rem; color:var(--board);">Ingreso y Registro de una Nueva Intervención</h3>
+            </div>
+            <ol style="font-size:0.9rem; line-height:1.6; margin:0 0 8px 18px;">
+              <li><b>Acceso al sistema:</b> Ingresa en la página con tu <b>RUT</b> (sin puntos ni guion) o tu <b>correo institucional UCSC</b>. Tu clave inicial es tu RUT o <code>practica2026</code>.</li>
+              <li><b>Crear intervención:</b> En el menú lateral izquierdo, haz clic en el botón <b>"+ Nueva intervención"</b>.</li>
+              <li><b>Subir grabación:</b> En la sección <i>1. Grabación y Transcripción de Aula</i>, selecciona tu archivo de audio en <i>"Archivo de Audio"</i>.</li>
+              <li><b>Completar antecedentes:</b> Ingresa la fecha de la clase, el curso escolar (ej: <i>2° medio B</i>), el contenido matemático abordado (ej: <i>Raíz enésima y aproximaciones</i>) y el propósito planificado.</li>
+              <li><b>Adjuntar planificación:</b> En el campo de planificación, puedes adjuntar tu archivo Word (<code>.docx</code>) o pegar el texto directamente.</li>
+            </ol>
+          </div>
+
+          <!-- Paso 3: Transcripción -->
+          <div class="comp-card" style="border-top:3px solid var(--board);">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <span style="background:var(--board); color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem;">3</span>
+              <h3 style="margin:0; font-size:1.15rem; color:var(--board);">Transcripción con Inteligencia Artificial</h3>
+            </div>
+            <p style="font-size:0.92rem; line-height:1.5; color:var(--ink); margin-bottom:10px;">
+              La plataforma cuenta con un transcriptor automático inteligente que procesa el habla del aula:
+            </p>
+            <ul style="font-size:0.9rem; line-height:1.6; margin:0 0 8px 18px;">
+              <li>Haz clic en el botón <b>"✨ Transcribir audio automáticamente con IA"</b>. La plataforma transcribirá la clase generando las marcas de tiempo <code>[mm:ss]</code> y separando los turnos de habla entre el practicante y los estudiantes.</li>
+              <li><i>Opción alternativa:</i> Si ya dispones de la transcripción generada por Teams, Zoom o Whisper, puedes subir el archivo <code>.docx</code>, <code>.vtt</code> o pegar el texto en el recuadro y presionar <i>"Procesar texto pegado"</i>.</li>
+              <li><b>Anonimización:</b> En el campo de anonimización puedes ingresar los nombres de tus estudiantes separados por comas para que sean reemplazados automáticamente por <i>"Estudiante 1", "Estudiante 2"</i>.</li>
+            </ul>
+          </div>
+
+          <!-- Paso 4: Análisis de Evidencias -->
+          <div class="comp-card" style="border-top:3px solid var(--board);">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <span style="background:var(--board); color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem;">4</span>
+              <h3 style="margin:0; font-size:1.15rem; color:var(--board);">Exploración de Evidencias y Episodios de Aula</h3>
+            </div>
+            <p style="font-size:0.92rem; line-height:1.5; color:var(--ink); margin-bottom:10px;">
+              Al ingresar a la intervención creada, la plataforma analiza la transcripción e identifica:
+            </p>
+            <ul style="font-size:0.9rem; line-height:1.6; margin:0 0 8px 18px;">
+              <li><b>Episodios didácticos clave:</b> Momentos de apertura, discusión colectiva, formulación de preguntas y cierre.</li>
+              <li><b>Marcas de tiempo interactivas:</b> Puedes hacer clic en cualquier marca <code>[mm:ss]</code> de la transcripción para escuchar inmediatamente ese segundo exacto en el reproductor integrado.</li>
+              <li><b>Evidencias y contraevidencias:</b> Indicadores observables vinculados a la demanda cognitiva, la gestión de errores matemáticos y la participación dialógica.</li>
+            </ul>
+          </div>
+
+          <!-- Paso 5: El Diálogo Reflexivo -->
+          <div class="comp-card" style="border-top:3px solid var(--board); background:#fafcfb;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <span style="background:var(--board); color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem;">5</span>
+              <h3 style="margin:0; font-size:1.15rem; color:var(--board);">El Diálogo Reflexivo Guiado (Los 8 Momentos)</h3>
+            </div>
+            <p style="font-size:0.92rem; line-height:1.5; color:var(--ink); margin-bottom:12px;">
+              En la pestaña <b>"Reflexión Guiada"</b> interactuarás con el tutor inteligente. El diálogo sigue la secuencia oficial del modelo de formación docente en 8 momentos secuenciales:
+            </p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:10px; margin-bottom:14px;">
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px;">
+                <b style="color:var(--board); font-size:0.88rem;">1. Reconstrucción:</b>
+                <p style="margin:2px 0 0; font-size:0.84rem; color:var(--muted);">¿Qué ocurrió globalmente en el episodio seleccionado?</p>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px;">
+                <b style="color:var(--board); font-size:0.88rem;">2. Descripción matemática:</b>
+                <p style="margin:2px 0 0; font-size:0.84rem; color:var(--muted);">¿Qué dijeron o hicieron los escolares con la tarea matemática?</p>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px;">
+                <b style="color:var(--board); font-size:0.88rem;">3. Interpretación:</b>
+                <p style="margin:2px 0 0; font-size:0.84rem; color:var(--muted);">¿Qué concepciones o razonamientos explican sus respuestas?</p>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px;">
+                <b style="color:var(--board); font-size:0.88rem;">4. Fundamentación:</b>
+                <p style="margin:2px 0 0; font-size:0.84rem; color:var(--muted);">¿En qué conceptos didácticos o teóricos sustentas tu lectura?</p>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px;">
+                <b style="color:var(--board); font-size:0.88rem;">5. Contraste didáctico:</b>
+                <p style="margin:2px 0 0; font-size:0.84rem; color:var(--muted);">¿Qué coincidió y qué difirió de tu planificación previa?</p>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px;">
+                <b style="color:var(--board); font-size:0.88rem;">6. Relación curricular:</b>
+                <p style="margin:2px 0 0; font-size:0.84rem; color:var(--muted);">¿Cómo se articula con los Objetivos de Aprendizaje del currículum?</p>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px;">
+                <b style="color:var(--board); font-size:0.88rem;">7. Alternativa situada:</b>
+                <p style="margin:2px 0 0; font-size:0.84rem; color:var(--muted);">¿Qué pregunta o intervención alternativa formularías?</p>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px;">
+                <b style="color:var(--board); font-size:0.88rem;">8. Proyección de mejora:</b>
+                <p style="margin:2px 0 0; font-size:0.84rem; color:var(--muted);">¿Qué meta observable implementarás en tu siguiente clase?</p>
+              </div>
+            </div>
+            <div style="background:var(--board-soft); border-radius:6px; padding:10px 14px; font-size:0.88rem; color:var(--board);">
+              💡 <b>Consejo clave:</b> Utiliza el botón <i>"🎧 Citar minuto actual del audio"</i> para anclar tus reflexiones en evidencias temporales concretas (ej: <code>[04:25]</code>). Esto enriquece sustantivamente tu análisis.
+            </div>
+          </div>
+
+          <!-- Paso 6: Aprobación y Retroalimentación -->
+          <div class="comp-card" style="border-top:3px solid var(--board);">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <span style="background:var(--board); color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem;">6</span>
+              <h3 style="margin:0; font-size:1.15rem; color:var(--board);">Borrador Oficial y Retroalimentación del Formador</h3>
+            </div>
+            <ol style="font-size:0.9rem; line-height:1.6; margin:0 0 8px 18px;">
+              <li>Al completar las 8 preguntas, presiona <b>"Generar Borrador Oficial de Reflexión"</b>.</li>
+              <li>Revisa la redacción de las 8 secciones consolidadas. Puedes editar cualquier párrafo para pulir tu argumentación pedagógica.</li>
+              <li>Haz clic en <b>"Aprobar Borrador Oficial"</b>. Tu reflexión quedará formalmente registrada para la revisión del equipo docente.</li>
+              <li><b>Revisión de tu Formador:</b> Tu profesor formador (Dr. Eugenio Chandía, Prof. Samuel Pereira o Dr. David Gómez) revisará tu reflexión, te dejará retroalimentación cualitativa y evaluará tu progresión reflexiva según la <i>Rúbrica de 5 Dimensiones</i> en la pestaña <b>"Avance en la Reflexión"</b>.</li>
+            </ol>
+          </div>
+
+          <!-- Preguntas frecuentes -->
+          <div class="comp-card" style="border-top:3px solid var(--muted);">
+            <h3 style="margin:0 0 10px; font-size:1.05rem; color:var(--ink);">Preguntas Frecuentes y Recomendaciones</h3>
+            <div style="display:grid; gap:10px; font-size:0.88rem; line-height:1.5;">
+              <div>
+                <b>¿Qué hago si mi audio pesa mucho o dura más de una hora?</b><br>
+                <span class="meta">La plataforma está optimizada para grabaciones de aula completas (soporta archivos de 10 MB a 80 MB y hasta 90 minutos). El procesamiento en streaming procesa el audio por tramos sin sobrecargar tu conexión.</span>
+              </div>
+              <div>
+                <b>¿Puedo pausar mi reflexión y continuar después?</b><br>
+                <span class="meta">Sí. Cada turno del diálogo se guarda automáticamente de manera persistente en la base de datos. Puedes salir de la sesión y reanudar en cualquier momento.</span>
+              </div>
+              <div>
+                <b>¿Quién puede ver mis grabaciones y reflexiones?</b><br>
+                <span class="meta">Únicamente tú y tus profesores formadores asignados al curso tienen acceso a tus intervenciones y reflexiones.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `;
+  },
+
   renderEstudiantes() {
     const practicantes = this.state.practicantes || [];
     const sec1 = practicantes.filter(p => !p.seccion || p.seccion.includes('1'));
@@ -1120,19 +1334,37 @@ const App = {
       });
     }
 
-    const btnAude = document.getElementById('quick-login-student-aude');
-    if (btnAude) {
-      btnAude.addEventListener('click', async () => {
-        document.getElementById('login-email').value = '19138115';
-        document.getElementById('login-pass').value = 'practica2026';
+    const btnJefe = document.getElementById('quick-login-jefe-hmorales');
+    if (btnJefe) {
+      btnJefe.addEventListener('click', async () => {
+        document.getElementById('login-email').value = 'hmorales@ucsc.cl';
+        document.getElementById('login-pass').value = 'tutor2026';
         form.dispatchEvent(new Event('submit'));
       });
     }
 
-    const btnDemo = document.getElementById('quick-login-student-demo');
-    if (btnDemo) {
-      btnDemo.addEventListener('click', async () => {
-        document.getElementById('login-email').value = 'estudiante@ucsc.cl';
+    const btnGomez = document.getElementById('quick-login-prof-dgomez');
+    if (btnGomez) {
+      btnGomez.addEventListener('click', async () => {
+        document.getElementById('login-email').value = 'david.gomez@uoh.cl';
+        document.getElementById('login-pass').value = 'tutor2026';
+        form.dispatchEvent(new Event('submit'));
+      });
+    }
+
+    const btnPereira = document.getElementById('quick-login-prof-spereira');
+    if (btnPereira) {
+      btnPereira.addEventListener('click', async () => {
+        document.getElementById('login-email').value = 'samuel.pereira@ucsc.cl';
+        document.getElementById('login-pass').value = 'tutor2026';
+        form.dispatchEvent(new Event('submit'));
+      });
+    }
+
+    const btnAude = document.getElementById('quick-login-student-aude');
+    if (btnAude) {
+      btnAude.addEventListener('click', async () => {
+        document.getElementById('login-email').value = '19138115';
         document.getElementById('login-pass').value = 'practica2026';
         form.dispatchEvent(new Event('submit'));
       });
@@ -1177,7 +1409,7 @@ const App = {
       });
     });
 
-    const btnNueva = document.getElementById('btn-nav-nueva') || document.getElementById('btn-dash-nueva');
+    const btnNueva = document.getElementById('btn-nav-nueva') || document.getElementById('btn-dash-nueva') || document.getElementById('btn-dash-nueva-welcome');
     if (btnNueva) btnNueva.addEventListener('click', () => { this.state.view = 'nueva'; this.render(); });
 
     const btnDash = document.getElementById('btn-nav-dashboard');
@@ -1191,6 +1423,17 @@ const App = {
 
     const btnMarco = document.getElementById('btn-nav-marco');
     if (btnMarco) btnMarco.addEventListener('click', () => { this.state.view = 'marco'; this.render(); });
+
+    const btnGuia = document.getElementById('btn-nav-guia') || document.getElementById('btn-dash-ver-guia');
+    if (btnGuia) btnGuia.addEventListener('click', () => { this.state.view = 'guia'; this.render(); window.scrollTo(0, 0); });
+
+    const btnDashGuia = document.getElementById('btn-dash-ver-guia');
+    if (btnDashGuia) btnDashGuia.addEventListener('click', () => { this.state.view = 'guia'; this.render(); window.scrollTo(0, 0); });
+
+    const btnImprimirGuia = document.getElementById('btn-imprimir-guia');
+    if (btnImprimirGuia) {
+      btnImprimirGuia.addEventListener('click', () => window.print());
+    }
 
     const btnEstudiantes = document.getElementById('btn-nav-estudiantes');
     if (btnEstudiantes) {

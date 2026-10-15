@@ -373,4 +373,69 @@ if (userCheck.count === 0) {
   `).run(iid, uid, tid, JSON.stringify(evalReflexivaDemo));
 }
 
+// Garantizar que los formadores y la jefatura de carrera existan en la base de datos
+const formadoresOficiales = [
+  {
+    id: 'usr-tutor-echandia',
+    email: 'echandia@ucsc.cl',
+    name: 'Dr. Eugenio Chandía Muñoz',
+    role: 'tutor',
+    institucion: 'UCSC',
+    curso: 'ED1360C',
+    seccion: 'Docente Responsable',
+    pass: 'tutor2026'
+  },
+  {
+    id: 'usr-tutor-dgomez',
+    email: 'david.gomez@uoh.cl',
+    name: 'Dr. David Gómez',
+    role: 'tutor',
+    institucion: 'UOH',
+    curso: 'ED1360C',
+    seccion: 'Profesor Formador',
+    pass: 'tutor2026'
+  },
+  {
+    id: 'usr-tutor-spereira',
+    email: 'samuel.pereira@ucsc.cl',
+    name: 'Prof. Samuel Pereira',
+    role: 'tutor',
+    institucion: 'UCSC',
+    curso: 'ED1360C',
+    seccion: 'Profesor Formador',
+    pass: 'tutor2026'
+  },
+  {
+    id: 'usr-jefe-hmorales',
+    email: 'hmorales@ucsc.cl',
+    name: 'Prof. Hernán Morales',
+    role: 'admin',
+    institucion: 'UCSC',
+    curso: 'ED1360C',
+    seccion: 'Jefe de Carrera',
+    pass: 'tutor2026'
+  }
+];
+
+try { db.exec("ALTER TABLE users ADD COLUMN rut TEXT;"); } catch (_) {}
+try { db.exec("ALTER TABLE users ADD COLUMN curso TEXT;"); } catch (_) {}
+try { db.exec("ALTER TABLE users ADD COLUMN seccion TEXT;"); } catch (_) {}
+
+for (const f of formadoresOficiales) {
+  const existing = db.prepare('SELECT id, name, role FROM users WHERE email = ?').get(f.email);
+  if (!existing) {
+    const salt = randomBytes(16).toString('hex');
+    const pwdHash = hash(f.pass, salt);
+    db.prepare(`
+      INSERT INTO users (id, email, password_hash, salt, name, role, institucion, curso, seccion, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `).run(f.id, f.email, pwdHash, salt, f.name, f.role, f.institucion, f.curso, f.seccion);
+    console.log(`✓ Formador/Directivo registrado: ${f.name} (${f.email})`);
+  } else {
+    db.prepare(`
+      UPDATE users SET name = ?, role = ?, institucion = ?, curso = ?, seccion = ? WHERE id = ?
+    `).run(f.name, f.role, f.institucion, f.curso, f.seccion, existing.id);
+  }
+}
+
 export default db;
