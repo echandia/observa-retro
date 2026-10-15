@@ -1,0 +1,868 @@
+
+\documentclass[11pt,a4paper]{article}
+
+% ------------------------------------------------------------
+% Paquetes
+% ------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{pdflscape}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{ragged2e}
+
+\geometry{top=2.4cm,bottom=2.4cm,left=2.5cm,right=2.5cm}
+\setstretch{1.12}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlist[itemize]{leftmargin=1.3em,itemsep=2pt,topsep=3pt}
+\setlist[enumerate]{leftmargin=1.6em,itemsep=2pt,topsep=3pt}
+
+\definecolor{ucscblue}{RGB}{25,63,113}
+\definecolor{lightblue}{RGB}{232,240,249}
+\definecolor{lightgray}{RGB}{245,245,245}
+\definecolor{darkgray}{RGB}{75,75,75}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=ucscblue,
+    urlcolor=ucscblue,
+    citecolor=ucscblue,
+    pdftitle={Proyecto de acompañamiento formativo y diagnóstico en Práctica Pedagógica III},
+    pdfauthor={Facultad de Educación, UCSC}
+}
+
+\titleformat{\section}
+  {\large\bfseries\color{ucscblue}}
+  {\thesection.}{0.5em}{}
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{darkgray}}
+  {\thesubsection.}{0.5em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small Práctica Pedagógica III}
+\rhead{\small Acompañamiento formativo y diagnóstico}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcommand{\propuesta}{\textbf{Propuesta de operacionalización}}
+\newcommand{\evidencia}{\textbf{Evidencia observable}}
+\newcommand{\na}{\textit{No evaluable con la evidencia disponible}}
+
+\begin{document}
+
+% ------------------------------------------------------------
+% Portada
+% ------------------------------------------------------------
+\begin{titlepage}
+    \centering
+    \vspace*{1.7cm}
+
+    {\Large\bfseries\color{ucscblue}
+    Proyecto de acompañamiento formativo y diagnóstico de trayectorias profesionales en Práctica Pedagógica III\par}
+
+    \vspace{0.6cm}
+
+    {\large
+    Análisis asistido por inteligencia artificial de intervenciones pedagógicas y reflexión profesional mediante un chatbot curricular\par}
+
+    \vspace{1.5cm}
+
+    \begin{tabular}{>{\bfseries}p{4.2cm}p{9.2cm}}
+        Carrera: & Pedagogía en Educación Media en Matemática\\[0.2cm]
+        Actividad curricular: & Práctica Pedagógica III (ED1360C)\\[0.2cm]
+        Unidad académica: & Facultad de Educación, Universidad Católica de la Santísima Concepción\\[0.2cm]
+        Carácter del recurso: & Formativo y diagnóstico, orientado al acompañamiento de trayectoria\\[0.2cm]
+        Producto central: & Sistema de análisis de evidencias y chatbot de reflexión profesional\\
+    \end{tabular}
+
+    \vfill
+
+    {\small Documento de propuesta para discusión, validación curricular y pilotaje institucional\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ------------------------------------------------------------
+\section{Resumen ejecutivo}
+
+La presente propuesta plantea el desarrollo y pilotaje de un sistema de acompañamiento formativo y diagnóstico para estudiantes de Práctica Pedagógica III. El sistema utilizará registros de sus intervenciones en establecimientos escolares, transcripciones de dichos registros y un chatbot especializado, alimentado con documentos curriculares de la carrera, para identificar evidencias del desarrollo progresivo de competencias profesionales.
+
+El propósito no es sustituir la observación académica ni calificar automáticamente el desempeño docente. Se busca ampliar las oportunidades de acompañamiento en una actividad curricular que contempla implementación en aula, pero que no dispone de observación directa sistemática por parte de monitores o académicos universitarios. El sistema permitirá reconstruir episodios de enseñanza, relacionarlos con el perfil de egreso, las competencias y los resultados de aprendizaje de la asignatura, y conducir una reflexión profesional basada en evidencia.
+
+La propuesta adopta una lógica explícita de alineamiento:
+
+\begin{center}
+\colorbox{lightblue}{
+\parbox{0.92\textwidth}{
+\centering
+\textbf{Perfil de egreso}
+$\rightarrow$
+\textbf{competencias}
+$\rightarrow$
+\textbf{progresión esperada}
+$\rightarrow$
+\textbf{indicadores}
+$\rightarrow$
+\textbf{evidencias observables}
+}}
+\end{center}
+
+Esta secuencia evita que el chatbot emita apreciaciones generales o descontextualizadas. Cada inferencia deberá estar vinculada con una competencia, un nivel de progresión previamente validado, uno o más indicadores observables y fragmentos concretos del registro, con sus respectivas marcas temporales.
+
+% ------------------------------------------------------------
+\section{Antecedentes curriculares}
+
+\subsection{Práctica Pedagógica III}
+
+El programa de Práctica Pedagógica III define esta actividad como un eje transversal para el desarrollo de competencias profesionales asociadas con el aprendizaje de la enseñanza de la matemática. La asignatura continúa el proceso de construcción de identidad profesional y promueve la reflexión sobre la práctica docente, la propia práctica y situaciones complejas reiteradas desde saberes contextuales, discentes, pedagógicos y didácticos. Asimismo, sitúa al estudiante en una fase intermedia de desarrollo de la autonomía profesional \cite{practicaIII}.
+
+Los resultados de aprendizaje declarados son:
+
+\begin{enumerate}
+    \item Reconocer el modo en que aprenden las y los estudiantes y sus implicancias para la secuencia de enseñanza y aprendizaje.
+    \item Implementar secuencias de enseñanza y aprendizaje coherentes con los antecedentes contextuales y las características de los estudiantes, incorporando recursos materiales y TIC.
+    \item Evaluar la efectividad de la implementación de la secuencia en los resultados de aprendizaje de las y los estudiantes.
+\end{enumerate}
+
+El programa también contempla observación participante, notas de campo, diseño e implementación de secuencias, escritura de diarios narrativos, análisis colaborativo y evaluación de la efectividad de la intervención \cite{practicaIII}. Por lo tanto, la incorporación de registros y diálogos reflexivos mediados por un chatbot no reemplaza el sentido de la asignatura, sino que puede fortalecer la sistematización de evidencias y la profundidad del proceso reflexivo.
+
+\subsection{Perfil de egreso}
+
+El perfil de egreso establece que el profesional posee conocimientos disciplinares, de las Ciencias de la Educación y de la Matemática; analiza elementos conceptuales pertinentes para contribuir al aprendizaje en diversos contextos; desarrolla procesos didácticos acordes con el desarrollo social y cultural de sus estudiantes; y analiza reflexiva y colaborativamente su quehacer pedagógico y disciplinar, apoyándose en procesos investigativos \cite{perfil}.
+
+Estas declaraciones constituyen expectativas de término de la carrera. En consecuencia, no corresponde evaluar a los estudiantes de Práctica III como si debieran demostrar íntegramente el perfil de egreso. La comparación debe realizarse como análisis de trayectoria, identificando la distancia entre las evidencias actuales y la progresión esperada para el sexto semestre.
+
+\subsection{Competencias institucionales pertinentes}
+
+El programa declara una contribución explícita a las siguientes competencias:
+
+\begin{itemize}
+    \item \textbf{CG1, nivel de dominio 2:} diagnosticar necesidades que pueden ser satisfechas desde el ámbito de la formación para implementar acciones innovadoras que contribuyan al bien común.
+    \item \textbf{CE3, nivel de dominio 2:} analizar propuestas pedagógicas basadas en evidencia sistematizada para la implementación de la práctica educativa.
+    \item \textbf{CE5:} desarrollar procesos didácticos para la enseñanza de la matemática en acuerdo con elementos del desarrollo social y cultural de sus estudiantes. En el anexo del programa, el nivel consignado corresponde a conocer teorías de la Didáctica de la Matemática como referencia para la enseñanza en contextos heterogéneos \cite{practicaIII,competencias}.
+\end{itemize}
+
+Los resultados de aprendizaje de la asignatura también generan evidencias relacionadas con CE1, CE2, CE4 y CG2. Sin embargo, estas competencias deben considerarse complementarias hasta que el Comité de Carrera valide formalmente su incorporación a la matriz de seguimiento.
+
+% ------------------------------------------------------------
+\section{Problema y necesidad formativa}
+
+Los estudiantes de Práctica Pedagógica III realizan intervenciones en aula y construyen evidencias relevantes de su desarrollo profesional. No obstante, la ausencia de observación directa sistemática por parte de académicos o monitores limita la posibilidad de:
+
+\begin{itemize}
+    \item analizar decisiones pedagógicas en el momento en que ocurren;
+    \item reconocer cómo el practicante responde al pensamiento matemático de los estudiantes;
+    \item vincular episodios reales de enseñanza con competencias y niveles de dominio;
+    \item proporcionar retroalimentación individual basada en evidencia;
+    \item seguir el desarrollo longitudinal de competencias durante la trayectoria formativa.
+\end{itemize}
+
+Los informes escritos y diarios narrativos son valiosos, pero recogen principalmente la reconstrucción posterior que hace el estudiante. Sin registros de la intervención, resulta difícil contrastar las interpretaciones con lo que efectivamente ocurrió en el aula.
+
+El problema no se resuelve únicamente cargando documentos en un chatbot. Un sistema de este tipo puede producir respuestas plausibles sin que exista una relación verificable entre los registros de aula y las competencias. Por ello, se requiere construir previamente un \textbf{modelo de evidencias} que defina qué se observará, qué inferencias son admisibles y cuáles son los límites de interpretación.
+
+% ------------------------------------------------------------
+\section{Propósito y alcance}
+
+\subsection{Propósito}
+
+Desarrollar un recurso formativo y diagnóstico que complemente el acompañamiento de Práctica Pedagógica III mediante el análisis sistemático de registros de intervención, la identificación de evidencias de competencias profesionales y la conducción de procesos de reflexión basados en episodios concretos.
+
+\subsection{Alcance}
+
+El sistema permitirá:
+
+\begin{itemize}
+    \item organizar un corpus curricular validado;
+    \item segmentar las intervenciones en episodios pedagógicamente significativos;
+    \item identificar evidencias y contraevidencias asociadas con indicadores previamente definidos;
+    \item generar un perfil formativo de desarrollo, sin convertirlo automáticamente en calificación;
+    \item formular preguntas de reflexión adaptativas a partir de la grabación;
+    \item comparar el análisis del sistema con el juicio de académicos formadores;
+    \item seguir la progresión del estudiante entre distintas intervenciones.
+\end{itemize}
+
+\subsection{Límites}
+
+Durante la fase inicial, el sistema no deberá:
+
+\begin{itemize}
+    \item sustituir el juicio académico;
+    \item asignar calificaciones de alto impacto;
+    \item inferir competencias a partir de una única intervención;
+    \item interpretar la ausencia de evidencia como ausencia de competencia;
+    \item evaluar aspectos no observables en el tipo de registro disponible;
+    \item generar diagnósticos sobre personalidad, emociones o atributos sensibles.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Objetivos}
+
+\subsection{Objetivo general}
+
+Desarrollar y validar un sistema de análisis asistido por inteligencia artificial que permita identificar, sistematizar y retroalimentar evidencias del desarrollo progresivo de las competencias profesionales de estudiantes de Práctica Pedagógica III, a partir de registros de sus intervenciones y de su comparación con la progresión esperada hacia el perfil de egreso.
+
+\subsection{Objetivos específicos}
+
+\begin{enumerate}
+    \item Construir una matriz de alineamiento entre perfil de egreso, competencias, niveles de dominio, resultados de aprendizaje, indicadores y evidencias observables.
+    \item Definir la progresión profesional esperada para Práctica Pedagógica III, distinguiéndola de la expectativa terminal del perfil de egreso.
+    \item Diseñar un procedimiento para registrar, transcribir y segmentar las intervenciones en episodios pedagógicamente significativos.
+    \item Desarrollar un motor de evidencias que vincule fragmentos del registro con indicadores y competencias del corpus curricular.
+    \item Diseñar un chatbot que conduzca reflexiones profesionales mediante preguntas generales y adaptativas basadas en episodios concretos.
+    \item Elaborar reportes individuales y longitudinales que identifiquen fortalezas, evidencias incipientes, aspectos no observados y metas de mejora.
+    \item Examinar la validez, consistencia, utilidad formativa y concordancia de los análisis del sistema con los realizados por académicos.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Preguntas orientadoras}
+
+\begin{enumerate}
+    \item ¿Qué evidencias del desarrollo de competencias profesionales pueden identificarse en las intervenciones de estudiantes de Práctica Pedagógica III?
+    \item ¿Cómo se relacionan dichas evidencias con la progresión esperada en sexto semestre y con el perfil de egreso de la carrera?
+    \item ¿Qué tipos de episodios permiten realizar inferencias más sólidas respecto de las competencias pedagógicas y didácticas?
+    \item ¿En qué medida las preguntas adaptativas del chatbot favorecen reflexiones sustentadas en evidencia y no únicamente valoraciones generales de la clase?
+    \item ¿Qué concordancia existe entre las inferencias generadas por el sistema y las valoraciones de académicos formadores?
+    \item ¿Qué cambios se observan en los perfiles formativos de los estudiantes entre sucesivas intervenciones?
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Modelo específico de alineamiento curricular y evidencias}
+
+\subsection{Principio general}
+
+La unidad básica del sistema no será la clase completa ni una puntuación global, sino la relación documentada entre:
+
+\begin{center}
+\textbf{una expectativa curricular}
+$\leftrightarrow$
+\textbf{un indicador}
+$\leftrightarrow$
+\textbf{uno o más episodios observables}
+$\leftrightarrow$
+\textbf{una interpretación justificada}.
+\end{center}
+
+Cada inferencia deberá conservar trazabilidad hacia:
+
+\begin{enumerate}
+    \item el fragmento del perfil de egreso;
+    \item la competencia y su nivel de dominio;
+    \item la progresión esperada para Práctica III;
+    \item el indicador analizado;
+    \item la evidencia observable y su localización;
+    \item la fuente de la evidencia;
+    \item el grado de confianza de la inferencia.
+\end{enumerate}
+
+\subsection{Dos niveles de referencia}
+
+Se propone distinguir dos niveles para evitar confusiones entre la expectativa terminal y el desempeño esperado en la asignatura:
+
+\begin{description}
+    \item[Nivel institucional:] corresponde a las competencias y niveles de dominio formalmente establecidos en los documentos de la carrera.
+    \item[Nivel situado de Práctica III:] describe el desempeño que razonablemente puede esperarse en sexto semestre, considerando los resultados de aprendizaje, las oportunidades de actuación disponibles y el nivel intermedio de autonomía declarado en el programa.
+\end{description}
+
+El nivel situado es una propuesta del proyecto y deberá ser validado por académicos de la carrera. No modifica por sí mismo el plan de estudios ni los niveles de dominio institucionales.
+
+\subsection{Escala formativa de progresión}
+
+\begin{table}[ht]
+\centering
+\caption{Escala propuesta para interpretar la progresión en Práctica III}
+\begin{tabularx}{\textwidth}{>{\bfseries}p{2cm}X}
+\toprule
+Categoría & Descripción\\
+\midrule
+0. Sin evidencia suficiente &
+No existen episodios pertinentes o el registro no permite realizar la inferencia. No equivale a ausencia de competencia.\\
+1. Evidencia incipiente &
+La actuación aparece de manera aislada, poco justificada, altamente dependiente de apoyos o sin conexión clara con el aprendizaje de los estudiantes.\\
+2. Nivel esperado en Práctica III &
+La actuación aparece de manera reconocible y parcialmente autónoma, se vincula con antecedentes del contexto o con respuestas de estudiantes y puede ser explicada mediante una reflexión posterior.\\
+3. Evidencia consolidada o avanzada &
+La actuación es consistente en distintos episodios, se adapta a la situación, utiliza evidencia de aprendizaje y se proyecta hacia decisiones posteriores.\\
+NE. No evaluable &
+La competencia o indicador no puede observarse con el registro disponible, la actividad realizada o las condiciones de la intervención.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Cadena de operacionalización}
+
+\begin{landscape}
+\small
+\begin{longtable}{p{3.0cm}p{3.0cm}p{4.2cm}p{4.2cm}p{5.0cm}p{3.2cm}}
+\caption{Matriz inicial: perfil de egreso, competencias, progresión, indicadores y evidencias observables}\\
+\toprule
+\textbf{Componente del perfil de egreso} &
+\textbf{Competencia y nivel institucional} &
+\textbf{Progresión esperada en Práctica III} &
+\textbf{Indicadores propuestos} &
+\textbf{Evidencias observables} &
+\textbf{Fuentes de contraste}\\
+\midrule
+\endfirsthead
+
+\toprule
+\textbf{Componente del perfil de egreso} &
+\textbf{Competencia y nivel institucional} &
+\textbf{Progresión esperada en Práctica III} &
+\textbf{Indicadores propuestos} &
+\textbf{Evidencias observables} &
+\textbf{Fuentes de contraste}\\
+\midrule
+\endhead
+
+Contribuir responsablemente a necesidades sociales y al bien común. &
+CG1--ND2: diagnosticar necesidades e implementar acciones innovadoras vinculadas con el bien común. &
+Reconoce necesidades de aprendizaje o participación presentes en el grupo y justifica al menos una decisión pedagógica orientada a responder a ellas. &
+Identifica una necesidad; explica su relevancia; ajusta una actividad, apoyo o forma de participación; analiza sus efectos. &
+Fragmentos donde recoge antecedentes, pregunta por dificultades, modifica apoyos, redistribuye participación o adapta una actividad; reflexión que vincula la decisión con una necesidad concreta. &
+Planificación, registro, notas de campo y diálogo reflexivo.\\
+\midrule
+
+Analizar reflexiva y colaborativamente el quehacer pedagógico, basándose en procesos investigativos. &
+CE3--ND2: analizar propuestas pedagógicas basadas en evidencia sistematizada para implementar la práctica. &
+Describe e interpreta episodios de su intervención utilizando evidencias del aprendizaje de los estudiantes; distingue descripción, interpretación y valoración; propone mejoras justificadas. &
+Selecciona episodios relevantes; usa respuestas de estudiantes como evidencia; contrasta lo esperado con lo ocurrido; reconoce limitaciones; formula alternativas. &
+Referencia a minutos específicos; transcripciones breves; comparación entre planificación y ejecución; identificación de evidencia confirmatoria y discrepante; propuesta de cambio verificable. &
+Registro, transcripción, planificación, productos de estudiantes y conversación con el chatbot.\\
+\midrule
+
+Desarrollar procesos didácticos para la enseñanza de la matemática en contextos diversos. &
+CE5. El programa consigna un nivel asociado a conocer teorías didácticas; los RA de la asignatura requieren además implementación y evaluación. &
+\textbf{Propuesta situada:} tránsito desde el conocimiento declarativo de referentes didácticos hacia su aplicación inicial en decisiones de diseño, mediación y evaluación. &
+Explicita propósito matemático; plantea tareas coherentes; formula preguntas que recuperan razonamiento; conecta representaciones; utiliza errores y estrategias; realiza cierres matemáticos. &
+Episodios de presentación de tareas, explicación, discusión, tratamiento de errores, comparación de estrategias, institucionalización y evaluación de comprensión. &
+Planificación, registro audiovisual o sonoro, materiales de enseñanza y reflexión posterior.\\
+\midrule
+
+Analizar elementos conceptuales de la Matemática para contribuir al aprendizaje. &
+CE4--ND2 como competencia complementaria: aplicar conocimiento matemático en situaciones de la disciplina y de su enseñabilidad. &
+Utiliza conocimiento matemático correcto y pertinente para interpretar procedimientos estudiantiles y sostener explicaciones escolares. &
+Mantiene precisión conceptual; reconoce procedimientos equivalentes o no equivalentes; identifica la fuente matemática de un error; selecciona ejemplos o contraejemplos. &
+Explicaciones del practicante; reformulación de respuestas; decisiones ante errores; conexiones entre representaciones; justificaciones matemáticas durante la interacción. &
+Registro, planificación, soluciones previstas y materiales.\\
+\midrule
+
+Implementar procesos pedagógicos inclusivos en contextos diversos. &
+CE1--ND2 como competencia complementaria: analizar elementos pedagógicos, del aprendizaje y biopsicosociales para orientar procesos inclusivos. &
+Considera características, conocimientos previos e intereses para ajustar la enseñanza y ampliar las oportunidades de participación. &
+Recupera conocimientos previos; diversifica apoyos; distribuye turnos; valida estrategias diferentes; evita excluir a estudiantes de la actividad matemática. &
+Preguntas diferenciadas; apoyos verbales o representacionales; participación de distintos estudiantes; ajustes en tiempo real; reflexión sobre estudiantes menos visibles. &
+Antecedentes del curso, registro, notas de campo y reflexión.\\
+\midrule
+
+Diseñar e implementar propuestas coherentes con currículum y evaluación. &
+CE2--ND2 como competencia complementaria: relacionar teorías evaluativas con procedimientos e instrumentos que orienten decisiones pedagógicas. &
+Obtiene evidencia durante la intervención y la utiliza para decidir continuidad, apoyo, profundización o cierre. &
+Formula preguntas diagnósticas; interpreta respuestas; modifica la secuencia; diferencia comprobación de respuesta y comprensión; compara aprendizaje esperado y alcanzado. &
+Preguntas de sondeo; retroalimentación; cambios en la secuencia; síntesis de aprendizajes; análisis posterior de resultados. &
+Planificación, registro, instrumentos, producciones y reflexión.\\
+\midrule
+
+Comunicarse efectivamente en contextos profesionales. &
+CG2--ND2 como competencia complementaria: comunicarse oralmente y por escrito mediante géneros académicos progresivamente complejos. &
+Comunica propósitos, consignas y explicaciones de manera comprensible; escucha, reformula y utiliza lenguaje matemático pertinente. &
+Claridad de consignas; precisión terminológica; adecuación del registro; escucha de respuestas; reformulación sin sustituir el razonamiento del estudiante. &
+Consignas, preguntas, explicaciones, retroalimentaciones, transiciones y síntesis orales; informe reflexivo final. &
+Registro y producción escrita.\\
+\bottomrule
+\end{longtable}
+\end{landscape}
+
+\subsection{Indicadores prioritarios vinculados con los resultados de aprendizaje}
+
+\begin{longtable}{p{2.4cm}p{4.2cm}p{4.4cm}p{4.6cm}}
+\caption{Indicadores prioritarios para el pilotaje}\\
+\toprule
+\textbf{Resultado de aprendizaje} &
+\textbf{Dimensión} &
+\textbf{Indicador} &
+\textbf{Evidencia mínima requerida}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Resultado de aprendizaje} &
+\textbf{Dimensión} &
+\textbf{Indicador} &
+\textbf{Evidencia mínima requerida}\\
+\midrule
+\endhead
+
+RA1 &
+Conocimiento de estudiantes y contexto &
+Recupera conocimientos previos, intereses o características del grupo y los vincula con una decisión de enseñanza. &
+Un episodio de la intervención más una explicación reflexiva que explicite la relación entre información y decisión.\\
+\midrule
+
+RA1 &
+Interpretación del pensamiento estudiantil &
+Identifica una estrategia, dificultad o error y formula una interpretación plausible de su origen. &
+Respuesta estudiantil localizada, interpretación del practicante y contraste con una alternativa.\\
+\midrule
+
+RA2 &
+Coherencia didáctica &
+Mantiene relación entre propósito matemático, tarea, preguntas, representaciones y cierre. &
+Evidencias de al menos dos momentos de la secuencia y referencia a la planificación.\\
+\midrule
+
+RA2 &
+Mediación del razonamiento &
+Formula preguntas que solicitan explicación, comparación, justificación o generalización. &
+Dos o más intercambios en los que la pregunta genere una respuesta matemática sustantiva.\\
+\midrule
+
+RA2 &
+Uso de contribuciones estudiantiles &
+Retoma respuestas o procedimientos para orientar la discusión y no solo para validar corrección. &
+Episodio con respuesta estudiantil, acción del practicante y efecto posterior en la conversación.\\
+\midrule
+
+RA3 &
+Obtención de evidencia de aprendizaje &
+Utiliza preguntas, tareas o producciones para reconocer qué comprendieron los estudiantes. &
+Episodio de evaluación formativa más interpretación posterior.\\
+\midrule
+
+RA3 &
+Evaluación de efectividad &
+Contrasta el aprendizaje esperado con el alcanzado y reconoce evidencias que apoyan y cuestionan su valoración. &
+Al menos una evidencia confirmatoria, una evidencia discrepante o límite y una conclusión prudente.\\
+\midrule
+
+RA3 &
+Proyección de mejora &
+Formula una modificación concreta y define qué evidencia permitiría verificar su efecto en la próxima intervención. &
+Acción observable, condición de implementación e indicador de progreso.\\
+\bottomrule
+\end{longtable}
+
+\subsection{Reglas de inferencia}
+
+Para que el sistema asigne una categoría de progresión, se proponen las siguientes reglas:
+
+\begin{enumerate}
+    \item Una afirmación del estudiante sin referencia a un episodio constituye evidencia débil.
+    \item Un fragmento aislado puede ilustrar una actuación, pero no permite afirmar consistencia.
+    \item La evidencia aumenta cuando convergen registro, planificación, productos de estudiantes y reflexión.
+    \item La inferencia debe indicar si existe evidencia contraria, ambigua o insuficiente.
+    \item La ausencia de un episodio no puede convertirse automáticamente en déficit.
+    \item El sistema debe diferenciar entre lo que observó, lo que interpretó y lo que no puede determinar.
+    \item Toda retroalimentación debe señalar la competencia, el indicador y la marca temporal correspondiente.
+\end{enumerate}
+
+\subsection{Fuerza de la evidencia}
+
+\begin{table}[ht]
+\centering
+\caption{Criterios para comunicar la fuerza de una inferencia}
+\begin{tabularx}{\textwidth}{>{\bfseries}p{2.5cm}X}
+\toprule
+Nivel & Criterio\\
+\midrule
+Baja &
+Se basa en una afirmación reflexiva general o en un único episodio ambiguo, sin triangulación.\\
+Media &
+Existe un episodio claro y una interpretación coherente, pero no se observa reiteración o contraste suficiente.\\
+Alta &
+Convergen varios episodios o fuentes, existe explicación del estudiante y se han considerado evidencias discrepantes.\\
+No determinable &
+El registro, la tarea o la calidad de la información no permiten realizar la inferencia.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ------------------------------------------------------------
+\section{Diseño del chatbot de reflexión profesional}
+
+\subsection{Función}
+
+El chatbot actuará como mediador de la reflexión posterior a la intervención. No escribirá automáticamente una reflexión final antes de que el estudiante haya analizado evidencias. Su función será:
+
+\begin{itemize}
+    \item recuperar episodios relevantes;
+    \item formular preguntas que exijan descripción, interpretación y justificación;
+    \item contrastar valoraciones generales con evidencia;
+    \item solicitar evidencias discrepantes;
+    \item relacionar la reflexión con competencias e indicadores;
+    \item orientar la formulación de metas observables para una próxima intervención.
+\end{itemize}
+
+\subsection{Secuencia de diálogo}
+
+\begin{enumerate}
+    \item \textbf{Reconstrucción:} propósito, tarea, contexto y episodio seleccionado.
+    \item \textbf{Descripción:} qué dijo o hizo el practicante y qué respondieron los estudiantes.
+    \item \textbf{Interpretación:} qué muestra el episodio sobre el pensamiento o aprendizaje.
+    \item \textbf{Fundamentación:} qué evidencia sostiene la interpretación.
+    \item \textbf{Contraste:} qué evidencia podría cuestionarla o limitarla.
+    \item \textbf{Relación curricular:} qué competencia e indicador se manifiestan.
+    \item \textbf{Alternativa:} qué otra decisión era posible y con qué fundamento.
+    \item \textbf{Proyección:} qué acción concreta se realizará y qué evidencia mostrará progreso.
+\end{enumerate}
+
+\subsection{Banco inicial de preguntas}
+
+\begin{longtable}{p{3.2cm}p{11.8cm}}
+\caption{Preguntas propuestas para la reflexión mediada}\\
+\toprule
+\textbf{Momento} & \textbf{Preguntas}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Momento} & \textbf{Preguntas}\\
+\midrule
+\endhead
+
+Propósito &
+¿Qué aprendizaje matemático esperabas promover? ¿Qué características del grupo influyeron en tu planificación?\\
+\midrule
+
+Selección de evidencia &
+Identifica un episodio relevante y señala su minuto aproximado. ¿Qué ocurrió exactamente antes, durante y después?\\
+\midrule
+
+Pensamiento estudiantil &
+¿Qué estrategia, dificultad o idea matemática se evidencia en la respuesta del estudiante? ¿Qué otra interpretación sería posible?\\
+\midrule
+
+Decisión docente &
+¿Qué decisión tomaste? ¿Qué evidencia de la situación motivó esa decisión? ¿Qué alternativas tenías?\\
+\midrule
+
+Efectividad &
+¿Qué evidencia muestra aprendizaje? ¿Qué evidencia cuestiona esa conclusión? ¿Qué no puedes afirmar con la información disponible?\\
+\midrule
+
+Competencias &
+¿Qué competencia e indicador se observan en este episodio? ¿La actuación fue incipiente, esperada para Práctica III o avanzada? Justifica.\\
+\midrule
+
+Mejora &
+¿Qué mantendrías y qué modificarías? ¿Qué efecto esperas? ¿Qué evidencia buscarías en la próxima grabación?\\
+\bottomrule
+\end{longtable}
+
+\subsection{Preguntas adaptativas generadas desde el registro}
+
+El sistema podrá formular preguntas específicas, por ejemplo:
+
+\begin{quote}
+En el minuto 18:40 un estudiante propone un procedimiento diferente, pero la discusión continúa sin retomarlo. ¿Qué conocimiento matemático podría revelar ese procedimiento? ¿Cómo podrías haberlo utilizado para comparar estrategias?
+\end{quote}
+
+\begin{quote}
+Entre los minutos 24:10 y 25:05 formulaste tres preguntas consecutivas y luego respondiste tú mismo. ¿Qué efecto pudo tener esta secuencia sobre la participación y el razonamiento de los estudiantes?
+\end{quote}
+
+\begin{quote}
+En el cierre señalaste que ``todos comprendieron''. ¿Qué evidencia del registro sostiene esa afirmación? Identifica también una evidencia que obligue a matizarla.
+\end{quote}
+
+\subsection{Producto del diálogo}
+
+El chatbot generará un borrador organizado, que deberá ser revisado y aprobado por el estudiante:
+
+\begin{enumerate}
+    \item propósito y antecedentes;
+    \item episodio seleccionado y marca temporal;
+    \item descripción de la situación;
+    \item interpretación matemática, pedagógica y didáctica;
+    \item evidencia de aprendizaje y limitaciones;
+    \item relación con competencias e indicadores;
+    \item alternativa de actuación;
+    \item meta de mejora y evidencia esperada.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Arquitectura funcional del sistema}
+
+\subsection{Corpus curricular}
+
+El corpus inicial incluirá:
+
+\begin{itemize}
+    \item perfil de egreso;
+    \item competencias genéricas y específicas con niveles de dominio;
+    \item programa de Práctica Pedagógica III;
+    \item resultados de aprendizaje y criterios de evaluación;
+    \item pautas y formatos de planificación, diario narrativo e informe;
+    \item otros documentos de la carrera que sean validados para este uso.
+\end{itemize}
+
+Cada documento deberá incorporarse con metadatos de versión, fecha, procedencia y vigencia. El chatbot debe mostrar qué documento utiliza al formular una interpretación.
+
+\subsection{Componentes}
+
+\begin{enumerate}
+    \item \textbf{Módulo de ingreso:} recepción segura del registro, planificación y antecedentes.
+    \item \textbf{Módulo de transcripción:} conversión a texto, separación de hablantes y revisión básica.
+    \item \textbf{Módulo de segmentación:} identificación de episodios como presentación de tarea, explicación, discusión, error, retroalimentación y cierre.
+    \item \textbf{Motor de evidencias:} búsqueda de episodios relacionados con indicadores y reglas de inferencia.
+    \item \textbf{Chatbot curricular:} diálogo reflexivo sustentado en documentos y marcas temporales.
+    \item \textbf{Reporte formativo:} perfil por competencias, evidencias, límites, preguntas pendientes y metas.
+    \item \textbf{Seguimiento longitudinal:} comparación entre intervenciones del mismo estudiante.
+    \item \textbf{Revisión humana:} espacio para que un académico confirme, modifique o rechace inferencias.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Metodología de desarrollo y validación}
+
+\subsection{Enfoque}
+
+Se propone una metodología de diseño, pilotaje y validación progresiva. La construcción tecnológica estará subordinada a la validación curricular y al análisis de evidencias.
+
+\subsection{Fases}
+
+\begin{enumerate}
+    \item \textbf{Alineamiento curricular.} Revisión documental, construcción de la matriz y delimitación de competencias prioritarias.
+    \item \textbf{Validación experta.} Revisión por académicos de práctica, didáctica de la matemática, evaluación y formación pedagógica.
+    \item \textbf{Construcción del prototipo.} Corpus documental, transcripción, segmentación, motor de evidencias y chatbot.
+    \item \textbf{Pilotaje acotado.} Aplicación con una muestra inicial de estudiantes y un número limitado de intervenciones.
+    \item \textbf{Codificación paralela.} Análisis independiente por al menos dos académicos y comparación con las salidas del sistema.
+    \item \textbf{Evaluación de experiencia.} Entrevistas o cuestionarios a estudiantes y académicos sobre utilidad, claridad, carga y efectos en la reflexión.
+    \item \textbf{Ajuste y escalamiento.} Revisión de indicadores, reglas de inferencia, preguntas y reportes antes de ampliar su uso.
+\end{enumerate}
+
+\subsection{Criterios de validación}
+
+\begin{itemize}
+    \item pertinencia curricular de competencias e indicadores;
+    \item claridad y observabilidad de los indicadores;
+    \item cobertura y calidad de los episodios recuperados;
+    \item fidelidad de las citas y marcas temporales;
+    \item concordancia entre sistema y evaluadores humanos;
+    \item capacidad para reconocer evidencia insuficiente;
+    \item profundidad de la reflexión antes y después del diálogo;
+    \item utilidad formativa percibida;
+    \item estabilidad del análisis entre intervenciones comparables;
+    \item presencia de sesgos sistemáticos o inferencias no justificadas.
+\end{itemize}
+
+\subsection{Unidad de análisis}
+
+La unidad primaria será el \textbf{episodio pedagógicamente significativo}, entendido como un fragmento delimitado por una situación, una decisión del practicante y una respuesta o consecuencia observable. El perfil individual se construirá agregando múltiples episodios y fuentes, no mediante una valoración global automática de la clase.
+
+% ------------------------------------------------------------
+\section{Reporte formativo propuesto}
+
+Cada reporte contendrá:
+
+\begin{enumerate}
+    \item identificación de la intervención y condiciones del registro;
+    \item síntesis descriptiva, sin evaluación automática global;
+    \item competencias e indicadores analizados;
+    \item evidencias con marcas temporales;
+    \item interpretación y fuerza de evidencia;
+    \item evidencias discrepantes o límites;
+    \item categoría de progresión formativa;
+    \item preguntas para profundizar;
+    \item meta de mejora para la siguiente intervención;
+    \item espacio de revisión del estudiante y del académico.
+\end{enumerate}
+
+\subsection{Ejemplo de salida}
+
+\begin{quote}
+\textbf{Competencia:} CE5, conocimiento didáctico de la matemática.
+
+\textbf{Indicador:} utiliza contribuciones estudiantiles para sostener una discusión matemática.
+
+\textbf{Evidencia:} minuto 18:32--19:47. El practicante solicita dos procedimientos, pero valida inmediatamente la primera respuesta correcta y no compara las estrategias.
+
+\textbf{Interpretación:} se observa apertura a estrategias múltiples, aunque su uso didáctico es todavía incipiente.
+
+\textbf{Fuerza de evidencia:} media. El episodio es claro, pero se requiere examinar otros momentos de la intervención.
+
+\textbf{Pregunta de reflexión:} ¿qué diferencias matemáticas entre ambas estrategias podrían haberse discutido?
+
+\textbf{Meta:} en la próxima intervención, solicitar al menos dos estrategias y pedir a los estudiantes que comparen su eficiencia o generalidad.
+\end{quote}
+
+% ------------------------------------------------------------
+\section{Uso longitudinal para acompañamiento de trayectoria}
+
+La comparación con el perfil de egreso se realizará mediante trayectorias y no como una distancia única. Para cada estudiante se conservarán:
+
+\begin{itemize}
+    \item evidencias acumuladas por competencia;
+    \item indicadores observados y no observables;
+    \item cambios en la fuerza y consistencia de la evidencia;
+    \item metas formuladas;
+    \item evidencias buscadas en la intervención siguiente;
+    \item valoración del estudiante;
+    \item retroalimentación académica.
+\end{itemize}
+
+El sistema deberá mostrar progreso, estabilidad o necesidad de apoyo, evitando etiquetas permanentes. Una competencia puede mostrar avances diferentes según el contenido matemático, el curso escolar, la tarea y las condiciones de práctica.
+
+% ------------------------------------------------------------
+\section{Consideraciones éticas y de gobernanza}
+
+\begin{itemize}
+    \item Obtener las autorizaciones institucionales y consentimientos correspondientes antes de registrar intervenciones.
+    \item Informar que el sistema tiene finalidad formativa y diagnóstica.
+    \item Minimizar la recolección de datos personales y anonimizar estudiantes escolares.
+    \item Definir plazos de conservación, acceso, eliminación y uso secundario de registros.
+    \item Restringir el acceso a estudiantes, académicos autorizados y equipo responsable.
+    \item No utilizar las grabaciones para fines distintos de los informados.
+    \item Mantener revisión humana de las inferencias.
+    \item Permitir que el estudiante cuestione, contextualice o solicite revisión de un reporte.
+    \item Evitar inferencias sobre emociones, personalidad, discapacidad, origen o características sensibles.
+    \item Declarar explícitamente los límites derivados de registros incompletos o solo sonoros.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Plan de trabajo para un semestre}
+
+\begin{table}[ht]
+\centering
+\caption{Plan de trabajo referencial}
+\begin{tabularx}{\textwidth}{>{\bfseries}p{2.2cm}X}
+\toprule
+Periodo & Actividades\\
+\midrule
+Semanas 1--3 &
+Revisión y validación del corpus; matriz perfil--competencias--progresión--indicadores--evidencias.\\
+Semanas 4--5 &
+Diseño de protocolos de registro, consentimiento, anonimización y carga de materiales.\\
+Semanas 6--8 &
+Construcción del prototipo, banco de preguntas y formato de reporte.\\
+Semanas 9--11 &
+Primer pilotaje, transcripción, segmentación y análisis humano paralelo.\\
+Semanas 12--13 &
+Diálogo reflexivo con estudiantes y evaluación de experiencia de uso.\\
+Semanas 14--15 &
+Análisis de concordancia, errores, sesgos y utilidad formativa.\\
+Semana 16 &
+Ajuste del sistema, reporte de pilotaje y propuesta de continuidad.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ------------------------------------------------------------
+\section{Productos esperados}
+
+\begin{enumerate}
+    \item Matriz validada de alineamiento curricular y evidencias.
+    \item Manual de indicadores y reglas de inferencia.
+    \item Protocolo de registro, anonimización y uso de datos.
+    \item Corpus curricular versionado.
+    \item Prototipo funcional del chatbot.
+    \item Banco de preguntas generales y adaptativas.
+    \item Formato de reporte individual y longitudinal.
+    \item Base de episodios codificados por humanos para validación.
+    \item Informe de concordancia, utilidad, limitaciones y ajustes.
+    \item Propuesta de integración progresiva en la línea de prácticas.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Riesgos y medidas de mitigación}
+
+\begin{longtable}{p{5.0cm}p{10.0cm}}
+\caption{Riesgos principales}\\
+\toprule
+\textbf{Riesgo} & \textbf{Medida de mitigación}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Riesgo} & \textbf{Medida de mitigación}\\
+\midrule
+\endhead
+
+Retroalimentaciones generales o plausibles sin sustento &
+Exigir trazabilidad a competencia, indicador, episodio y marca temporal.\\
+\midrule
+
+Confundir ausencia de evidencia con bajo desempeño &
+Incorporar categorías ``sin evidencia suficiente'' y ``no evaluable''.\\
+\midrule
+
+Sobreinterpretar un único episodio &
+Requerir múltiples episodios o triangulación para afirmar consistencia.\\
+\midrule
+
+Dependencia excesiva de la transcripción automática &
+Permitir revisión humana y acceso al audio o video original.\\
+\midrule
+
+Uso sumativo prematuro &
+Mantener el pilotaje con propósito formativo y diagnóstico.\\
+\midrule
+
+Carga excesiva para estudiantes o académicos &
+Automatizar tareas mecánicas, acotar indicadores prioritarios y diseñar reportes breves.\\
+\midrule
+
+Respuestas elaboradas por el chatbot en lugar del estudiante &
+Solicitar primero respuestas propias, preguntas de profundización y aprobación explícita del borrador final.\\
+\midrule
+
+Desactualización de documentos &
+Versionar el corpus y definir responsables de actualización.\\
+\bottomrule
+\end{longtable}
+
+% ------------------------------------------------------------
+\section{Criterios para la toma de decisiones institucionales}
+
+Antes de escalar el sistema, se recomienda verificar:
+
+\begin{enumerate}
+    \item que la matriz curricular sea aceptada por la carrera;
+    \item que los indicadores sean observables y no redundantes;
+    \item que el sistema pueda justificar sus inferencias;
+    \item que reconozca con frecuencia adecuada los casos no evaluables;
+    \item que la concordancia con académicos sea suficiente para un uso formativo;
+    \item que los estudiantes comprendan y puedan cuestionar sus reportes;
+    \item que el diálogo produzca reflexiones más específicas y basadas en evidencia;
+    \item que existan condiciones de protección y gobernanza de datos.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Conclusión}
+
+La principal contribución del proyecto no reside en disponer de un chatbot, sino en construir un sistema curricularmente alineado para transformar registros de práctica en evidencias discutibles, trazables y útiles para el desarrollo profesional. La inteligencia artificial puede ampliar el acompañamiento, pero solo si opera sobre criterios previamente definidos, reconoce los límites de la evidencia y mantiene la participación activa de estudiantes y académicos.
+
+El resultado esperado es un recurso que ayude al estudiante a comprender qué competencias está construyendo, qué evidencia sustenta esa interpretación, qué aspectos todavía no pueden determinarse y qué acción concreta puede realizar en una próxima intervención para avanzar hacia el perfil de egreso.
+
+% ------------------------------------------------------------
+\begin{thebibliography}{9}
+
+\bibitem{practicaIII}
+Universidad Católica de la Santísima Concepción. (2020).
+\textit{Programa de Actividad Curricular: Práctica Pedagógica III (ED1360C)}.
+Facultad de Educación.
+
+\bibitem{perfil}
+Universidad Católica de la Santísima Concepción. (s.f.).
+\textit{Perfil de egreso de Pedagogía en Educación Media en Matemática}.
+Facultad de Educación.
+
+\bibitem{competencias}
+Universidad Católica de la Santísima Concepción. (s.f.).
+\textit{Competencias genéricas y específicas del perfil de egreso}.
+Facultad de Educación.
+
+\end{thebibliography}
+
+\end{document}

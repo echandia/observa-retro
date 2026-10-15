@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+*.log
+*.db-shm
+*.db-wal
+scratch/
+Audios de prueba/*.m4a
+!Audios de prueba/README.md
+uploads/audios/trans-*

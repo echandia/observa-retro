@@ -1,0 +1,22 @@
+{
+  "name": "observa-retro",
+  "version": "1.0.0",
+  "description": "Plataforma de Acompañamiento Formativo y Diagnóstico de Práctica Pedagógica III - CIAE BASAL / UCSC",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "keywords": [
+    "practica-pedagogica",
+    "reflexion-docente",
+    "chatbot",
+    "educacion-matematica"
+  ],
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "author": "CIAE BASAL / UCSC",
+  "license": "ISC"
+}
