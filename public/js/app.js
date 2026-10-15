@@ -657,13 +657,28 @@ const App = {
     const evs = (allEvs || []).filter(e => e.ind && e.ind.startsWith(c.id));
     const isTutor = this.state.user.role === 'tutor' || this.state.user.role === 'admin';
     const rev = (revision && revision.comp && revision.comp[c.id]) || null;
+    const descartada = rev && rev.estado === 'rechazada' && (rev.desestimarEvidencias !== false);
+
+    // Determinar nivel efectivo para visualización de cabecera
+    let catPillHtml = '';
+    if (rev && rev.estado === 'rechazada') {
+      const nivelVal = rev.nivelValidado || 'NE';
+      catPillHtml = `<span class="cat-pill rejected cat-${nivelVal}">Nivel ${nivelVal} (Rechazado por formador)</span>`;
+    } else if (rev && rev.estado === 'modificada') {
+      catPillHtml = `<span class="cat-pill cat-${rev.nivelValidado}">Nivel ${rev.nivelValidado} (Validado por formador)</span>`;
+    } else if (rev && rev.estado === 'confirmada') {
+      const nivelVal = rev.nivelValidado || c.categoria;
+      catPillHtml = `<span class="cat-pill cat-${nivelVal}">Nivel ${nivelVal} (Validado por formador)</span>`;
+    } else {
+      catPillHtml = `<span class="cat-pill cat-${c.categoria}">${c.categoria === 'NE' ? 'No evaluable' : `Nivel ${c.categoria} (Preliminar IA)`}</span>`;
+    }
 
     return `
       <section class="comp-card">
         <header>
           <h3><span class="cid-badge">${c.id}</span></h3>
           <div class="row">
-            <span class="cat-pill cat-${c.categoria}">${c.categoria === 'NE' ? 'No evaluable' : `Nivel ${c.categoria}`}</span>
+            ${catPillHtml}
             <span class="tag">Fuerza: ${c.fuerza}</span>
           </div>
         </header>
@@ -673,13 +688,18 @@ const App = {
 
         <div style="margin:10px 0;">
           ${evs.map(e => `
-            <div class="evidence-item ${e.tipo}">
+            <div class="evidence-item ${e.tipo} ${descartada ? 'descartada' : ''}">
               <div class="row" style="justify-content:space-between;">
                 <b>${e.ind}</b>
+                ${descartada ? `<span class="badge-descartada">⚠️ Cita desestimada por el formador</span>` : ''}
                 ${e.ini ? `<button class="btn-ref" data-seek-line="${e.ini}">Líneas ${e.ini}-${e.fin}</button>` : ''}
               </div>
-              <p class="evidence-desc"><b>Observado:</b> ${this.escapeHtml(e.observado)}</p>
-              <p class="evidence-desc"><b>Interpretación didáctica:</b> ${this.escapeHtml(e.interpretacion)}</p>
+              <p class="evidence-desc" style="${descartada ? 'text-decoration:line-through; opacity:0.65;' : ''}">
+                <b>Observado:</b> ${this.escapeHtml(e.observado)}
+              </p>
+              <p class="evidence-desc" style="${descartada ? 'opacity:0.65;' : ''}">
+                <b>Interpretación didáctica:</b> ${this.escapeHtml(e.interpretacion)}
+              </p>
             </div>
           `).join('')}
         </div>
@@ -688,20 +708,166 @@ const App = {
         ${c.meta ? `<p style="font-size:0.9rem; color:var(--ink); margin:6px 0;"><b>Meta de mejora sugerida:</b> ${this.escapeHtml(c.meta)}</p>` : ''}
 
         ${isTutor ? `
-          <div class="academic-review-box">
-            <b style="font-size:0.85rem;">Validación del Formador:</b>
-            <div class="row">
-              <button class="btn min secondary ${rev && rev.estado === 'confirmada' ? 'active' : ''}" data-act-rev="confirmada" data-comp="${c.id}">Confirmar</button>
-              <button class="btn min secondary ${rev && rev.estado === 'modificada' ? 'active' : ''}" data-act-rev="modificada" data-comp="${c.id}">Modificar</button>
-              <button class="btn min secondary ${rev && rev.estado === 'rechazada' ? 'active' : ''}" data-act-rev="rechazada" data-comp="${c.id}">Rechazar</button>
+          <div class="academic-review-box ${rev ? rev.estado : ''}" id="review-box-${c.id}">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <b style="font-size:0.88rem;">Validación Pedagógica del Formador:</b>
+              ${rev && rev.estado === 'confirmada' ? `
+                <span class="tag" style="background:var(--success-bg); color:var(--success); border-color:var(--success); font-weight:600;">
+                  ✓ Confirmada (${rev.nivelValidado || `Nivel ${c.categoria}`})
+                </span>
+              ` : rev && rev.estado === 'rechazada' ? `
+                <span class="tag" style="background:var(--danger-bg); color:var(--danger); border-color:var(--danger); font-weight:600;">
+                  ✕ Rechazada (Nivel oficial: ${rev.nivelValidado || 'NE'})
+                </span>
+              ` : rev && rev.estado === 'modificada' ? `
+                <span class="tag" style="background:var(--warn-bg); color:var(--warn); border-color:var(--warn); font-weight:600;">
+                  ✎ Modificada (Nivel oficial: ${rev.nivelValidado})
+                </span>
+              ` : `
+                <span class="tag" style="background:#fff; color:var(--muted);">⏳ Pendiente de validación</span>
+              `}
             </div>
-            <textarea class="form-control" data-comp-note="${c.id}" placeholder="Comentario o retroalimentación formativa">${this.escapeHtml(rev ? rev.nota : '')}</textarea>
+
+            <div class="row" style="margin:2px 0;">
+              <button type="button" class="btn min ${rev && rev.estado === 'confirmada' ? '' : 'secondary'}" data-act-rev="confirmada" data-comp="${c.id}">
+                ✓ Confirmar
+              </button>
+              <button type="button" class="btn min ${rev && rev.estado === 'modificada' ? '' : 'secondary'}" data-act-rev="modificada" data-comp="${c.id}">
+                ✎ Reclasificar nivel
+              </button>
+              <button type="button" class="btn min ${rev && rev.estado === 'rechazada' ? 'danger' : 'secondary'}" data-act-rev="rechazada" data-comp="${c.id}">
+                ✕ Rechazar clasificación
+              </button>
+            </div>
+
+            <!-- Panel desplegable cuando se Rechaza -->
+            <div class="rev-panel-rechazo" id="panel-rechazo-${c.id}" style="${rev && rev.estado === 'rechazada' ? 'display:grid;' : 'display:none;'} gap:8px; background:#fff; padding:12px; border-radius:6px; border:1px solid var(--danger); margin-top:4px;">
+              <div style="font-size:0.84rem; font-weight:700; color:var(--danger);">
+                ¿Por qué rechazas la clasificación de la IA para ${c.id}?
+              </div>
+              
+              <label style="font-size:0.82rem; font-weight:600;">
+                Motivo del rechazo pedagógico:
+                <select class="form-control" data-rev-motivo="${c.id}" style="margin-top:3px; font-size:0.84rem;">
+                  <option value="falsa_evidencia" ${rev && rev.motivo === 'falsa_evidencia' ? 'selected' : ''}>Falsa evidencia: las frases citadas no demuestran el indicador matemático</option>
+                  <option value="mala_interpretacion" ${rev && rev.motivo === 'mala_interpretacion' ? 'selected' : ''}>Mala interpretación didáctica del turno de habla por parte de la IA</option>
+                  <option value="sin_oportunidad" ${rev && rev.motivo === 'sin_oportunidad' ? 'selected' : ''}>Falta de oportunidad en el aula: el diseño no permitió observar este criterio</option>
+                  <option value="descontextualizado" ${rev && rev.motivo === 'descontextualizado' ? 'selected' : ''}>Cita descontextualizada o atribuida a un interlocutor erróneo</option>
+                  <option value="otro" ${rev && rev.motivo === 'otro' ? 'selected' : ''}>Otro motivo pedagógico / didáctico</option>
+                </select>
+              </label>
+
+              <label style="font-size:0.82rem; font-weight:600;">
+                Nivel resultante para el practicante:
+                <select class="form-control" data-rev-nivel-rechazo="${c.id}" style="margin-top:3px; font-size:0.84rem;">
+                  <option value="NE" ${!rev || rev.nivelValidado === 'NE' ? 'selected' : ''}>No Evidenciada (NE / Nivel 0) — Recomendado al rechazar</option>
+                  <option value="1" ${rev && rev.nivelValidado === '1' ? 'selected' : ''}>Nivel 1 (Inicial) — Hubo intento incipiente pero no el nivel propuesto por la IA</option>
+                </select>
+              </label>
+
+              <label style="font-size:0.82rem; display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--ink);">
+                <input type="checkbox" data-rev-desestimar="${c.id}" ${!rev || rev.desestimarEvidencias !== false ? 'checked' : ''}>
+                <b>Desestimar y tachar las evidencias textuales de la IA</b> (para que el practicante sepa que no son válidas)
+              </label>
+
+              <label style="font-size:0.82rem; font-weight:600;">
+                Orientación formativa al estudiante (explica qué faltó o qué ocurrió realmente):
+                <textarea class="form-control" data-comp-note="${c.id}" rows="2" style="margin-top:3px; font-size:0.84rem;" placeholder="Explica al estudiante qué ocurrió realmente en este episodio y qué decisión didáctica debió haber tomado...">${this.escapeHtml((rev && rev.nota) || '')}</textarea>
+              </label>
+              
+              <div style="display:flex; justify-content:flex-end;">
+                <button type="button" class="btn min danger" data-btn-save-rev="${c.id}">
+                  💾 Guardar Rechazo y Notificar
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel desplegable cuando se Modifica -->
+            <div class="rev-panel-modifica" id="panel-modifica-${c.id}" style="${rev && rev.estado === 'modificada' ? 'display:grid;' : 'display:none;'} gap:8px; background:#fff; padding:12px; border-radius:6px; border:1px solid var(--marker); margin-top:4px;">
+              <div style="font-size:0.84rem; font-weight:700; color:var(--board-dark);">
+                Reclasificar nivel de la competencia ${c.id}:
+              </div>
+
+              <label style="font-size:0.82rem; font-weight:600;">
+                Nuevo nivel asignado por el formador:
+                <select class="form-control" data-rev-nivel-modifica="${c.id}" style="margin-top:3px; font-size:0.84rem;">
+                  <option value="1" ${rev && rev.nivelValidado === '1' ? 'selected' : ''}>Nivel 1 (Inicial / Incipiente)</option>
+                  <option value="2" ${rev && rev.nivelValidado === '2' ? 'selected' : ''}>Nivel 2 (Competente / Esperado en PPIII)</option>
+                  <option value="3" ${rev && rev.nivelValidado === '3' ? 'selected' : ''}>Nivel 3 (Destacado / Avanzado)</option>
+                  <option value="NE" ${rev && rev.nivelValidado === 'NE' ? 'selected' : ''}>NE (No Evidenciada)</option>
+                </select>
+              </label>
+
+              <label style="font-size:0.82rem; font-weight:600;">
+                Fundamento didáctico del cambio de nivel:
+                <textarea class="form-control" data-comp-note="${c.id}" rows="2" style="margin-top:3px; font-size:0.84rem;" placeholder="Fundamenta por qué ajustas el nivel (ej: el estudiante conectó representaciones pero faltó contrastar con el grupo)...">${this.escapeHtml((rev && rev.nota) || '')}</textarea>
+              </label>
+
+              <div style="display:flex; justify-content:flex-end;">
+                <button type="button" class="btn min" data-btn-save-rev="${c.id}">
+                  💾 Guardar Reclasificación
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel desplegable cuando se Confirma -->
+            <div class="rev-panel-confirma" id="panel-confirma-${c.id}" style="${rev && rev.estado === 'confirmada' ? 'display:grid;' : 'display:none;'} gap:8px; background:#fff; padding:12px; border-radius:6px; border:1px solid var(--success); margin-top:4px;">
+              <div style="font-size:0.84rem; color:var(--success); font-weight:700;">
+                ✓ Clasificación de la IA validada (${`Nivel ${c.categoria}`})
+              </div>
+              <label style="font-size:0.82rem; font-weight:600;">
+                Comentario u observación complementaria para el estudiante (opcional):
+                <textarea class="form-control" data-comp-note="${c.id}" rows="2" style="margin-top:3px; font-size:0.84rem;" placeholder="Ej: Muy buen encuadre del propósito matemático...">${this.escapeHtml((rev && rev.nota) || '')}</textarea>
+              </label>
+              <div style="display:flex; justify-content:flex-end;">
+                <button type="button" class="btn min" data-btn-save-rev="${c.id}">
+                  💾 Guardar Confirmación
+                </button>
+              </div>
+            </div>
           </div>
-        ` : (rev && rev.nota ? `
-          <div class="academic-review-box">
-            <p><b>Retroalimentación del profesor formador:</b> ${this.escapeHtml(rev.nota)}</p>
+        ` : `
+          <div class="academic-review-box ${rev ? rev.estado : ''}">
+            ${rev && rev.estado === 'confirmada' ? `
+              <div style="display:flex; align-items:flex-start; gap:8px;">
+                <span style="font-size:1.1rem;">✅</span>
+                <div>
+                  <b style="color:var(--success); font-size:0.92rem;">Clasificación confirmada por el profesor formador (Nivel ${rev.nivelValidado || c.categoria})</b>
+                  <p style="margin:2px 0 0; font-size:0.85rem; color:var(--muted);">Tu formador validó las evidencias y el nivel de logro sugerido por el sistema.</p>
+                  ${rev.nota ? `<blockquote style="margin:8px 0 0; padding:8px 12px; background:#fff; border-left:3px solid var(--success); font-size:0.88rem; border-radius:0 4px 4px 0;"><b>Nota del tutor:</b> ${this.escapeHtml(rev.nota)}</blockquote>` : ''}
+                </div>
+              </div>
+            ` : rev && rev.estado === 'rechazada' ? `
+              <div style="display:flex; align-items:flex-start; gap:8px;">
+                <span style="font-size:1.1rem;">❌</span>
+                <div>
+                  <b style="color:var(--danger); font-size:0.92rem;">Clasificación preliminar de la IA rechazada por tu profesor formador</b>
+                  <p style="margin:2px 0 4px; font-size:0.85rem; color:var(--ink);">
+                    <b>Motivo didáctico:</b> ${rev.motivo === 'falsa_evidencia' ? 'Las frases citadas no demuestran el indicador matemático esperado' :
+                      rev.motivo === 'mala_interpretacion' ? 'Mala interpretación didáctica del turno de habla por parte de la IA' :
+                      rev.motivo === 'sin_oportunidad' ? 'Falta de oportunidad en la clase para observar este criterio' :
+                      rev.motivo === 'descontextualizado' ? 'Cita descontextualizada o atribuida erróneamente' : 'Ajuste pedagógico realizado por el tutor'}<br>
+                    <b>Nivel oficial asignado:</b> <span class="tag" style="font-weight:700; color:var(--danger);">${rev.nivelValidado === 'NE' ? 'No Evidenciada (NE)' : `Nivel ${rev.nivelValidado}`}</span>
+                  </p>
+                  ${rev.nota ? `<blockquote style="margin:6px 0 0; padding:8px 12px; background:#fff; border-left:3px solid var(--danger); font-size:0.88rem; border-radius:0 4px 4px 0;"><b>Orientación del formador:</b> ${this.escapeHtml(rev.nota)}</blockquote>` : ''}
+                </div>
+              </div>
+            ` : rev && rev.estado === 'modificada' ? `
+              <div style="display:flex; align-items:flex-start; gap:8px;">
+                <span style="font-size:1.1rem;">✏️</span>
+                <div>
+                  <b style="color:var(--board-dark); font-size:0.92rem;">Nivel reclasificado por tu profesor formador: Nivel ${rev.nivelValidado}</b>
+                  <p style="margin:2px 0 4px; font-size:0.85rem; color:var(--muted);">La IA propuso Nivel ${c.categoria}, pero tras la revisión de aula tu formador asignó oficialmente Nivel ${rev.nivelValidado}.</p>
+                  ${rev.nota ? `<blockquote style="margin:6px 0 0; padding:8px 12px; background:#fff; border-left:3px solid var(--marker); font-size:0.88rem; border-radius:0 4px 4px 0;"><b>Fundamentación del tutor:</b> ${this.escapeHtml(rev.nota)}</blockquote>` : ''}
+                </div>
+              </div>
+            ` : `
+              <div style="font-size:0.84rem; color:var(--muted);">
+                ℹ️ <i>Clasificación preliminar estimada por IA. Pendiente de validación oficial por tu profesor formador.</i>
+              </div>
+            `}
           </div>
-        ` : '')}
+        `}
       </section>
     `;
   },
@@ -1471,6 +1637,99 @@ const App = {
         }
       });
     }
+
+    // Validación Pedagógica del Formador (Confirmar, Reclasificar, Rechazar)
+    document.querySelectorAll('[data-act-rev]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const compId = btn.dataset.comp;
+        const action = btn.dataset.actRev;
+
+        const pRechazo = document.getElementById(`panel-rechazo-${compId}`);
+        const pModifica = document.getElementById(`panel-modifica-${compId}`);
+        const pConfirma = document.getElementById(`panel-confirma-${compId}`);
+
+        if (pRechazo) pRechazo.style.display = action === 'rechazada' ? 'grid' : 'none';
+        if (pModifica) pModifica.style.display = action === 'modificada' ? 'grid' : 'none';
+        if (pConfirma) pConfirma.style.display = action === 'confirmada' ? 'grid' : 'none';
+
+        document.querySelectorAll(`[data-comp="${compId}"][data-act-rev]`).forEach(b => {
+          if (b.dataset.actRev === action) {
+            b.className = action === 'rechazada' ? 'btn min danger' : 'btn min';
+          } else {
+            b.className = 'btn min secondary';
+          }
+        });
+      });
+    });
+
+    document.querySelectorAll('[data-btn-save-rev]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const compId = btn.dataset.btnSaveRev;
+        const box = document.getElementById(`review-box-${compId}`);
+        if (!box || !this.state.currentInterv) return;
+
+        btn.disabled = true;
+        const prevText = btn.textContent;
+        btn.textContent = 'Guardando...';
+
+        const activeBtn = document.querySelector(`[data-comp="${compId}"][data-act-rev]:not(.secondary)`);
+        const estado = activeBtn ? activeBtn.dataset.actRev : 'confirmada';
+
+        let nivelValidado = '2';
+        let motivo = '';
+        let desestimarEvidencias = false;
+        let nota = '';
+
+        if (estado === 'rechazada') {
+          const motivoEl = document.querySelector(`[data-rev-motivo="${compId}"]`);
+          const nivelEl = document.querySelector(`[data-rev-nivel-rechazo="${compId}"]`);
+          const desestimarEl = document.querySelector(`[data-rev-desestimar="${compId}"]`);
+          const notaEl = document.querySelector(`#panel-rechazo-${compId} [data-comp-note="${compId}"]`);
+          motivo = motivoEl ? motivoEl.value : 'falsa_evidencia';
+          nivelValidado = nivelEl ? nivelEl.value : 'NE';
+          desestimarEvidencias = desestimarEl ? desestimarEl.checked : true;
+          nota = notaEl ? notaEl.value.trim() : '';
+        } else if (estado === 'modificada') {
+          const nivelEl = document.querySelector(`[data-rev-nivel-modifica="${compId}"]`);
+          const notaEl = document.querySelector(`#panel-modifica-${compId} [data-comp-note="${compId}"]`);
+          nivelValidado = nivelEl ? nivelEl.value : '1';
+          nota = notaEl ? notaEl.value.trim() : '';
+        } else {
+          const notaEl = document.querySelector(`#panel-confirma-${compId} [data-comp-note="${compId}"]`);
+          const compOrig = (this.state.currentInterv.analisis?.competencias || []).find(x => x.id === compId);
+          nivelValidado = compOrig ? compOrig.categoria : '2';
+          nota = notaEl ? notaEl.value.trim() : '';
+        }
+
+        const currentRev = this.state.currentInterv.revision || { comp: {}, rub: {} };
+        currentRev.comp = currentRev.comp || {};
+        currentRev.comp[compId] = {
+          estado,
+          nivelValidado,
+          motivo,
+          desestimarEvidencias,
+          nota,
+          fecha: new Date().toISOString()
+        };
+
+        try {
+          await window.API.guardarRevision(this.state.currentInterv.intervencion.id, {
+            comp: currentRev.comp,
+            rub: currentRev.rub || {},
+            retroTutor: currentRev.academico || ''
+          });
+          this.state.notice = `✓ Validación de ${compId} guardada con éxito (${estado === 'rechazada' ? 'Rechazada - Nivel ' + nivelValidado : estado === 'modificada' ? 'Reclasificada a Nivel ' + nivelValidado : 'Confirmada'}).`;
+          await this.abrirIntervencion(this.state.currentInterv.intervencion.id);
+        } catch (err) {
+          alert('Error al guardar validación: ' + err.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = prevText;
+        }
+      });
+    });
 
     // Chatbot Reflexivo
     this.bindChatEvents();

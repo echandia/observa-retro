@@ -478,24 +478,55 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .evidence-desc { font-size: 0.9rem; margin-top: 4px; line-height: 1.45; }
 
-/* Academic Review Box */
+/* Academic Review Box (Validación del Formador) */
 .academic-review-box {
   background: var(--sunken);
-  border-radius: 6px;
-  padding: 12px 14px;
-  margin-top: 12px;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 14px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
   border: 1px solid var(--line);
+  transition: all 0.15s ease;
+}
+.academic-review-box.confirmada {
+  border-left: 4px solid var(--success);
+  background: #F4FAF6;
+}
+.academic-review-box.rechazada {
+  border-left: 4px solid var(--danger);
+  background: #FFF5F5;
+}
+.academic-review-box.modificada {
+  border-left: 4px solid var(--marker);
+  background: #FFFBF0;
 }
 .academic-review-box textarea {
-  min-height: 60px;
+  min-height: 65px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 8px 10px;
   width: 100%;
   resize: vertical;
+}
+
+.evidence-item.descartada {
+  border-left-color: var(--danger) !important;
+  background: #FFF5F5 !important;
+  opacity: 0.82;
+}
+.badge-descartada {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--danger);
+  background: #FFFFFF;
+  border: 1px solid var(--danger);
+  padding: 1px 7px;
+  border-radius: 4px;
 }
 
 /* Chat Layout & Reflection */
