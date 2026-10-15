@@ -41,7 +41,7 @@ Antes de registrar una intervención en la plataforma, asegúrate de contar con 
 
 ### Paso 1: Ingreso a la Plataforma
 - **Dirección web:** Accede a la plataforma web de Observa-Retro.
-- **Usuario:** Tu **RUT** (sin puntos ni guion, por ejemplo: `19138115`) o tu **correo institucional UCSC** (`@alumnos.ucsc.cl`).
+- **Usuario:** Tu **RUT** (sin puntos ni guion, por ejemplo: `12345678-k` o `12345678k`) o tu **correo institucional UCSC** (`@alumnos.ucsc.cl`).
 - **Contraseña inicial:** Tu **RUT** o la clave predeterminada `practica2026`.
 
 ---

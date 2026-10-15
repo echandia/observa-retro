@@ -118,52 +118,26 @@ const App = {
   renderLoginView() {
     return `
       <div class="modal-overlay">
-        <div class="modal-card" style="max-width:520px;">
+        <div class="modal-card" style="max-width:440px;">
           <div style="text-align:center;">
             <h1>Observa-Retro</h1>
             <p class="lead" style="margin:4px 0 16px;">Acompañamiento Formativo y Diagnóstico en Práctica Pedagógica III<br><small>UCSC · Facultad de Educación · CIAE BASAL</small></p>
           </div>
 
-          <div style="background:#e8f4f2; border:1px solid #1B4943; border-radius:6px; padding:10px 12px; margin-bottom:14px; font-size:0.86rem; color:#1B4943; line-height:1.4;">
-            💡 <b>Estudiantes de Práctica Pedagógica III:</b><br>
-            Pueden ingresar directamente con su <b>RUT</b> (sin puntos ni guión, ej: <code>19138115</code>) o su <b>correo institucional</b> UCSC. Su clave inicial es su <b>RUT</b> o <code>practica2026</code>.
+          <div style="background:#e8f4f2; border:1px solid #1B4943; border-radius:6px; padding:12px 14px; margin-bottom:16px; font-size:0.88rem; color:#1B4943; line-height:1.45;">
+            💡 <b>Acceso Institucional:</b><br>
+            Ingresa con tu <b>RUT</b> (sin puntos ni guion) o tu <b>correo institucional</b> (@ucsc.cl / @alumnos.ucsc.cl).
           </div>
 
           <form id="form-login" style="display:grid; gap:12px;">
             <label style="font-weight:600; font-size:0.9rem;">RUT o Correo Institucional:
-              <input type="text" id="login-email" class="form-control" required placeholder="Ej: 19138115 o maude@alumnos.ucsc.cl" value="">
+              <input type="text" id="login-email" class="form-control" required placeholder="RUT o correo institucional" value="" autocomplete="username">
             </label>
             <label style="font-weight:600; font-size:0.9rem;">Contraseña:
-              <input type="password" id="login-pass" class="form-control" required placeholder="Tu RUT o practica2026" value="">
+              <input type="password" id="login-pass" class="form-control" required placeholder="••••••••" value="" autocomplete="current-password">
             </label>
             <button type="submit" class="btn" style="justify-content:center; padding:10px; margin-top:6px;">Ingresar a la Plataforma</button>
           </form>
-
-          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:14px;">
-            <p class="meta" style="margin-bottom:8px; font-weight:600;">Accesos directos rápidos:</p>
-            <div style="display:grid; gap:8px;">
-              <div style="font-size:0.78rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Equipo Docente y Formadores:</div>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                <button class="btn secondary min" id="quick-login-prof-echandia" style="justify-content:flex-start; text-align:left; font-size:0.82rem; padding:6px 8px;">
-                  👨‍🏫 Dr. Eugenio Chandía (Docente)
-                </button>
-                <button class="btn secondary min" id="quick-login-jefe-hmorales" style="justify-content:flex-start; text-align:left; font-size:0.82rem; padding:6px 8px;">
-                  🏛️ Prof. Hernán Morales (Jefe Carrera)
-                </button>
-                <button class="btn secondary min" id="quick-login-prof-dgomez" style="justify-content:flex-start; text-align:left; font-size:0.82rem; padding:6px 8px;">
-                  👨‍🏫 Dr. David Gómez (UOH)
-                </button>
-                <button class="btn secondary min" id="quick-login-prof-spereira" style="justify-content:flex-start; text-align:left; font-size:0.82rem; padding:6px 8px;">
-                  👨‍🏫 Prof. Samuel Pereira (UCSC)
-                </button>
-              </div>
-
-              <div style="font-size:0.78rem; text-transform:uppercase; color:var(--muted); font-weight:700; margin-top:4px;">Estudiantes Practicantes:</div>
-              <button class="btn secondary min" id="quick-login-student-aude" style="justify-content:flex-start; text-align:left; font-size:0.84rem;">
-                🎓 Marcos Aude Villagra (Practicante Sec. 1 · RUT 19138115)
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     `;
@@ -1324,51 +1298,6 @@ const App = {
         }
       });
     }
-
-    const btnProf = document.getElementById('quick-login-prof-echandia');
-    if (btnProf) {
-      btnProf.addEventListener('click', async () => {
-        document.getElementById('login-email').value = 'echandia@ucsc.cl';
-        document.getElementById('login-pass').value = 'tutor2026';
-        form.dispatchEvent(new Event('submit'));
-      });
-    }
-
-    const btnJefe = document.getElementById('quick-login-jefe-hmorales');
-    if (btnJefe) {
-      btnJefe.addEventListener('click', async () => {
-        document.getElementById('login-email').value = 'hmorales@ucsc.cl';
-        document.getElementById('login-pass').value = 'tutor2026';
-        form.dispatchEvent(new Event('submit'));
-      });
-    }
-
-    const btnGomez = document.getElementById('quick-login-prof-dgomez');
-    if (btnGomez) {
-      btnGomez.addEventListener('click', async () => {
-        document.getElementById('login-email').value = 'david.gomez@uoh.cl';
-        document.getElementById('login-pass').value = 'tutor2026';
-        form.dispatchEvent(new Event('submit'));
-      });
-    }
-
-    const btnPereira = document.getElementById('quick-login-prof-spereira');
-    if (btnPereira) {
-      btnPereira.addEventListener('click', async () => {
-        document.getElementById('login-email').value = 'samuel.pereira@ucsc.cl';
-        document.getElementById('login-pass').value = 'tutor2026';
-        form.dispatchEvent(new Event('submit'));
-      });
-    }
-
-    const btnAude = document.getElementById('quick-login-student-aude');
-    if (btnAude) {
-      btnAude.addEventListener('click', async () => {
-        document.getElementById('login-email').value = '19138115';
-        document.getElementById('login-pass').value = 'practica2026';
-        form.dispatchEvent(new Event('submit'));
-      });
-    }
   },
 
   bindAppEvents() {
@@ -1382,21 +1311,7 @@ const App = {
       });
     }
 
-    // Role switcher
-    const btnSwitch = document.getElementById('btn-quick-switch-role');
-    if (btnSwitch) {
-      btnSwitch.addEventListener('click', async () => {
-        const targetEmail = this.state.user.role === 'tutor' ? 'estudiante@ucsc.cl' : 'tutor@ucsc.cl';
-        const targetPass = this.state.user.role === 'tutor' ? 'practica2026' : 'tutor2026';
-        const res = await window.API.login(targetEmail, targetPass);
-        this.state.user = res.user;
-        this.state.view = 'dashboard';
-        await this.loadInitialData();
-        this.render();
-      });
-    }
-
-    // Modal de configuración de Transcripción con IA
+    // Modal de configuración de Transcripción con IA (Solo Formadores)
     const btnConfigIA = document.getElementById('btn-config-ia-modal');
     if (btnConfigIA) {
       btnConfigIA.addEventListener('click', () => this.openConfigModal());
