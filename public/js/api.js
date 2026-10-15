@@ -64,6 +64,28 @@ const API = {
     return await this.request('/api/users/practicantes');
   },
 
+  async getCursosEstudiantes() {
+    return await this.request('/api/cursos/estudiantes');
+  },
+
+  async subirListaExcel(file) {
+    const headers = {
+      'x-filename': encodeURIComponent(file.name)
+    };
+    if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
+
+    const res = await fetch('/api/cursos/subir-excel', {
+      method: 'POST',
+      headers,
+      body: file
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Error al subir nómina de curso');
+    }
+    return await res.json();
+  },
+
   // Intervenciones
   async getIntervenciones(studentId) {
     const url = studentId ? `/api/intervenciones?studentId=${encodeURIComponent(studentId)}` : '/api/intervenciones';

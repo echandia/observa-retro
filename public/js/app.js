@@ -45,8 +45,8 @@ const App = {
       try {
         const pr = await window.API.getPracticantes();
         this.state.practicantes = pr.practicantes || [];
-        if (!this.state.selectedStudentId && this.state.practicantes.length) {
-          this.state.selectedStudentId = this.state.practicantes[0].id;
+        if (!this.state.selectedStudentId) {
+          this.state.selectedStudentId = 'all';
         }
       } catch (e) {}
     } else {
@@ -118,30 +118,38 @@ const App = {
   renderLoginView() {
     return `
       <div class="modal-overlay">
-        <div class="modal-card">
+        <div class="modal-card" style="max-width:520px;">
           <div style="text-align:center;">
             <h1>Observa-Retro</h1>
             <p class="lead" style="margin:4px 0 16px;">Acompañamiento Formativo y Diagnóstico en Práctica Pedagógica III<br><small>UCSC · Facultad de Educación · CIAE BASAL</small></p>
           </div>
 
+          <div style="background:#e8f4f2; border:1px solid #1B4943; border-radius:6px; padding:10px 12px; margin-bottom:14px; font-size:0.86rem; color:#1B4943; line-height:1.4;">
+            💡 <b>Estudiantes de Práctica Pedagógica III:</b><br>
+            Pueden ingresar directamente con su <b>RUT</b> (sin puntos ni guión, ej: <code>19138115</code>) o su <b>correo institucional</b> UCSC. Su clave inicial es su <b>RUT</b> o <code>practica2026</code>.
+          </div>
+
           <form id="form-login" style="display:grid; gap:12px;">
-            <label style="font-weight:600; font-size:0.9rem;">Correo institucional:
-              <input type="email" id="login-email" class="form-control" required placeholder="estudiante@ucsc.cl" value="estudiante@ucsc.cl">
+            <label style="font-weight:600; font-size:0.9rem;">RUT o Correo Institucional:
+              <input type="text" id="login-email" class="form-control" required placeholder="Ej: 19138115 o maude@alumnos.ucsc.cl" value="">
             </label>
             <label style="font-weight:600; font-size:0.9rem;">Contraseña:
-              <input type="password" id="login-pass" class="form-control" required placeholder="••••••••" value="practica2026">
+              <input type="password" id="login-pass" class="form-control" required placeholder="Tu RUT o practica2026" value="">
             </label>
             <button type="submit" class="btn" style="justify-content:center; padding:10px; margin-top:6px;">Ingresar a la Plataforma</button>
           </form>
 
-          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:8px;">
-            <p class="meta" style="margin-bottom:8px; font-weight:600;">Acceso rápido de demostración institucional:</p>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:14px;">
+            <p class="meta" style="margin-bottom:8px; font-weight:600;">Accesos directos rápidos:</p>
             <div style="display:grid; gap:8px;">
-              <button class="btn secondary min" id="quick-login-student" style="justify-content:flex-start; text-align:left;">
-                <b>Estudiante:</b> María Jesús Valenzuela (Practicante 6° semestre)
+              <button class="btn secondary min" id="quick-login-prof-echandia" style="justify-content:flex-start; text-align:left;">
+                👨‍🏫 <b>Profesor Formador:</b> Dr. Eugenio Chandía Muñoz (Docente Responsable)
               </button>
-              <button class="btn secondary min" id="quick-login-tutor" style="justify-content:flex-start; text-align:left;">
-                <b>Formador:</b> Dr. Carlos Henríquez (Profesor Formador)
+              <button class="btn secondary min" id="quick-login-student-aude" style="justify-content:flex-start; text-align:left;">
+                🎓 <b>Estudiante Practicante:</b> Marcos Aude Villagra (Sec. 1 · RUT 19138115)
+              </button>
+              <button class="btn secondary min" id="quick-login-student-demo" style="justify-content:flex-start; text-align:left;">
+                📋 <b>Demostración guiada:</b> María Jesús Valenzuela (Clase analizada)
               </button>
             </div>
           </div>
@@ -160,8 +168,11 @@ const App = {
         <div style="margin-bottom:8px;">
           <label style="font-size:0.8rem; opacity:0.85; display:block; margin-bottom:4px;">Practicante a supervisar:</label>
           <select id="select-active-student" class="form-control" style="background:var(--board); color:var(--board-fg); border-color:rgba(255,255,255,0.3); font-size:0.86rem; padding:6px 8px;">
+            <option value="all" ${this.state.selectedStudentId === 'all' ? 'selected' : ''}>Todos los practicantes (${this.state.practicantes.length})</option>
             ${this.state.practicantes.map(p => `
-              <option value="${p.id}" ${p.id === this.state.selectedStudentId ? 'selected' : ''}>${this.escapeHtml(p.name)}</option>
+              <option value="${p.id}" ${p.id === this.state.selectedStudentId ? 'selected' : ''}>
+                ${this.escapeHtml(p.name)} [${p.seccion || 'Sec. 1'}]
+              </option>
             `).join('')}
           </select>
         </div>
@@ -213,6 +224,11 @@ const App = {
           <button class="nav-btn ${this.state.view === 'marco' ? 'active' : ''}" id="btn-nav-marco">
             Marco curricular PPIII
           </button>
+          ${isTutor ? `
+          <button class="nav-btn ${this.state.view === 'estudiantes' ? 'active' : ''}" id="btn-nav-estudiantes">
+            👥 Nómina de estudiantes
+          </button>
+          ` : ''}
         </div>
 
         <div class="sidebar-footer">
@@ -238,7 +254,8 @@ const App = {
               this.state.view === 'nueva' ? 'Cargar Nueva Intervención de Aula' :
               this.state.view === 'intervencion' && this.state.currentInterv ? this.escapeHtml(this.state.currentInterv.intervencion.contenido) :
               this.state.view === 'trayectoria' ? 'Trayectoria Longitudinal de Competencias' :
-              this.state.view === 'avance_reflexivo' ? 'Evaluación del Avance en la Reflexión' : 'Marco Curricular'}
+              this.state.view === 'avance_reflexivo' ? 'Evaluación del Avance en la Reflexión' :
+              this.state.view === 'estudiantes' ? 'Nómina Oficial y Gestión de Cursos' : 'Marco Curricular'}
           </h2>
         </div>
         <div class="row">
@@ -260,6 +277,7 @@ const App = {
     if (this.state.view === 'trayectoria') return this.renderTrayectoria();
     if (this.state.view === 'avance_reflexivo') return this.renderAvanceReflexivo();
     if (this.state.view === 'marco') return this.renderMarco();
+    if (this.state.view === 'estudiantes') return this.renderEstudiantes();
     return this.renderDashboard();
   },
 
@@ -302,6 +320,7 @@ const App = {
               <thead>
                 <tr>
                   <th>#</th>
+                  ${(this.state.user.role === 'tutor' || this.state.user.role === 'admin') ? '<th>Practicante</th>' : ''}
                   <th>Fecha</th>
                   <th>Curso</th>
                   <th>Contenido / Tarea Matemática</th>
@@ -316,6 +335,7 @@ const App = {
                 ${list.map((item, idx) => `
                   <tr>
                     <td><b>${idx + 1}</b></td>
+                    ${(this.state.user.role === 'tutor' || this.state.user.role === 'admin') ? `<td><b>${this.escapeHtml(item.student_name || '—')}</b></td>` : ''}
                     <td>${this.formatFecha(item.fecha)}</td>
                     <td>${this.escapeHtml(item.curso || '—')}</td>
                     <td><b>${this.escapeHtml(item.contenido)}</b></td>
@@ -981,13 +1001,105 @@ const App = {
     `;
   },
 
+  renderEstudiantes() {
+    const practicantes = this.state.practicantes || [];
+    const sec1 = practicantes.filter(p => !p.seccion || p.seccion.includes('1'));
+    const sec2 = practicantes.filter(p => p.seccion && p.seccion.includes('2'));
+    const total = practicantes.length;
+
+    return `
+      <div style="max-width:1040px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+          <div>
+            <h2 style="margin:0 0 4px; color:var(--board);">Nóminas de Curso y Estudiantes Matriculados</h2>
+            <p class="lead" style="margin:0;">Práctica Pedagógica III (ED1360C) · Facultad de Educación UCSC</p>
+          </div>
+          <button class="btn" id="btn-toggle-subir-nomina">
+            📥 Cargar otra lista de curso (.xlsx)
+          </button>
+        </div>
+
+        <!-- Panel colapsable de carga de Excel -->
+        <div id="panel-subir-nomina" style="display:none; background:var(--surface); border:2px dashed var(--board); border-radius:8px; padding:18px; margin-bottom:20px;">
+          <h3 style="margin-top:0; color:var(--board);">Cargar Lista Oficial de Curso (Excel .xlsx)</h3>
+          <p style="font-size:0.9rem; color:var(--muted); margin:4px 0 14px;">
+            Sube el archivo Excel oficial de la segunda sección u otro curso. La plataforma registrará inmediatamente a los estudiantes con su RUT y correo institucional UCSC (@alumnos.ucsc.cl) y les habilitará acceso con su RUT y clave inicial.
+          </p>
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <input type="file" id="input-archivo-nomina" accept=".xlsx" class="form-control" style="max-width:360px;">
+            <button class="btn" id="btn-enviar-nomina" disabled>Importar nómina</button>
+            <span id="nomina-upload-status" class="meta" style="font-weight:600;"></span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:20px;">
+          <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px;">
+            <span style="font-size:0.8rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Total Matriculados</span>
+            <div style="font-size:1.8rem; font-weight:700; color:var(--board); margin-top:4px;">${total} estudiantes</div>
+            <small class="meta">${sec1.length} en Sec. 1 · ${sec2.length} en Sec. 2</small>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px;">
+            <span style="font-size:0.8rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Curso / Asignatura</span>
+            <div style="font-size:1.2rem; font-weight:700; color:var(--ink); margin-top:6px;">ED1360C</div>
+            <small class="meta">Práctica Pedagógica III · Semestre 2</small>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px;">
+            <span style="font-size:0.8rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Docente Responsable</span>
+            <div style="font-size:1.1rem; font-weight:700; color:var(--board); margin-top:6px;">Dr. Eugenio Chandía M.</div>
+            <small class="meta">Facultad de Educación · UCSC</small>
+          </div>
+        </div>
+
+        <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; overflow:hidden;">
+          <div style="padding:12px 16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.02);">
+            <b style="font-size:0.95rem;">Estudiantes Habilitados para Subir Grabaciones y Planificaciones</b>
+            <span class="meta">${practicantes.length} estudiantes registrados</span>
+          </div>
+
+          <div class="table-scroll">
+            <table style="margin:0;">
+              <thead>
+                <tr>
+                  <th style="width:40px;">#</th>
+                  <th>Nombre Completo</th>
+                  <th>RUT</th>
+                  <th>Correo UCSC</th>
+                  <th>Sección</th>
+                  <th>Clave Inicial</th>
+                  <th style="text-align:right;">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${practicantes.map((p, idx) => `
+                  <tr>
+                    <td><b>${idx + 1}</b></td>
+                    <td><b>${this.escapeHtml(p.name)}</b></td>
+                    <td><code>${this.escapeHtml(p.rut || '—')}</code></td>
+                    <td style="font-size:0.88rem;">${this.escapeHtml(p.email)}</td>
+                    <td><span class="user-role-tag ${p.seccion && p.seccion.includes('2') ? 'tutor' : ''}">${this.escapeHtml(p.seccion || 'Sec. 1')}</span></td>
+                    <td style="font-size:0.84rem; color:var(--muted);">RUT o <code>practica2026</code></td>
+                    <td style="text-align:right;">
+                      <button class="btn secondary min btn-supervisar-estudiante" data-id="${p.id}" data-name="${this.escapeHtml(p.name)}">
+                        Supervisar clases
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
   bindLoginEvents() {
     const form = document.getElementById('form-login');
     if (form) {
       form.addEventListener('submit', async ev => {
         ev.preventDefault();
-        const email = document.getElementById('login-email').value;
-        const pass = document.getElementById('login-pass').value;
+        const email = document.getElementById('login-email').value.trim();
+        const pass = document.getElementById('login-pass').value.trim();
         try {
           const res = await window.API.login(email, pass);
           this.state.user = res.user;
@@ -999,20 +1111,29 @@ const App = {
       });
     }
 
-    const btnStudent = document.getElementById('quick-login-student');
-    if (btnStudent) {
-      btnStudent.addEventListener('click', async () => {
-        document.getElementById('login-email').value = 'estudiante@ucsc.cl';
+    const btnProf = document.getElementById('quick-login-prof-echandia');
+    if (btnProf) {
+      btnProf.addEventListener('click', async () => {
+        document.getElementById('login-email').value = 'echandia@ucsc.cl';
+        document.getElementById('login-pass').value = 'tutor2026';
+        form.dispatchEvent(new Event('submit'));
+      });
+    }
+
+    const btnAude = document.getElementById('quick-login-student-aude');
+    if (btnAude) {
+      btnAude.addEventListener('click', async () => {
+        document.getElementById('login-email').value = '19138115';
         document.getElementById('login-pass').value = 'practica2026';
         form.dispatchEvent(new Event('submit'));
       });
     }
 
-    const btnTutor = document.getElementById('quick-login-tutor');
-    if (btnTutor) {
-      btnTutor.addEventListener('click', async () => {
-        document.getElementById('login-email').value = 'tutor@ucsc.cl';
-        document.getElementById('login-pass').value = 'tutor2026';
+    const btnDemo = document.getElementById('quick-login-student-demo');
+    if (btnDemo) {
+      btnDemo.addEventListener('click', async () => {
+        document.getElementById('login-email').value = 'estudiante@ucsc.cl';
+        document.getElementById('login-pass').value = 'practica2026';
         form.dispatchEvent(new Event('submit'));
       });
     }
@@ -1070,6 +1191,82 @@ const App = {
 
     const btnMarco = document.getElementById('btn-nav-marco');
     if (btnMarco) btnMarco.addEventListener('click', () => { this.state.view = 'marco'; this.render(); });
+
+    const btnEstudiantes = document.getElementById('btn-nav-estudiantes');
+    if (btnEstudiantes) {
+      btnEstudiantes.addEventListener('click', async () => {
+        this.state.view = 'estudiantes';
+        try {
+          const pr = await window.API.getPracticantes();
+          this.state.practicantes = pr.practicantes || [];
+        } catch (_) {}
+        this.render();
+      });
+    }
+
+    // Botones de supervisar estudiante específico desde la nómina
+    document.querySelectorAll('.btn-supervisar-estudiante').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const studentId = btn.dataset.id;
+        this.state.selectedStudentId = studentId;
+        this.state.view = 'dashboard';
+        await this.cargarIntervenciones();
+        this.render();
+      });
+    });
+
+    // Panel subir nómina Excel
+    const btnToggleNomina = document.getElementById('btn-toggle-subir-nomina');
+    const panelNomina = document.getElementById('panel-subir-nomina');
+    if (btnToggleNomina && panelNomina) {
+      btnToggleNomina.addEventListener('click', () => {
+        panelNomina.style.display = panelNomina.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+
+    const inputArchivoNomina = document.getElementById('input-archivo-nomina');
+    const btnEnviarNomina = document.getElementById('btn-enviar-nomina');
+    const statusNomina = document.getElementById('nomina-upload-status');
+    if (inputArchivoNomina && btnEnviarNomina) {
+      inputArchivoNomina.addEventListener('change', () => {
+        btnEnviarNomina.disabled = !inputArchivoNomina.files.length;
+      });
+
+      btnEnviarNomina.addEventListener('click', async () => {
+        const file = inputArchivoNomina.files[0];
+        if (!file) return;
+
+        btnEnviarNomina.disabled = true;
+        if (statusNomina) {
+          statusNomina.style.color = 'var(--board)';
+          statusNomina.textContent = '⏳ Importando nómina y matriculando estudiantes...';
+        }
+
+        try {
+          const res = await window.API.subirListaExcel(file);
+          if (res.ok) {
+            if (statusNomina) {
+              statusNomina.style.color = 'var(--success)';
+              statusNomina.textContent = `✓ Nómina importada: ${res.resultado.creados} nuevos, ${res.resultado.actualizados} actualizados.`;
+            }
+            alert(`✓ Nómina importada con éxito:\n\nCurso: ${res.resultado.titulo || res.resultado.curso}\nSección: ${res.resultado.seccion}\nEstudiantes procesados: ${res.resultado.total}`);
+            const pr = await window.API.getPracticantes();
+            this.state.practicantes = pr.practicantes || [];
+            this.render();
+          } else {
+            throw new Error(res.error || 'Error al importar nómina');
+          }
+        } catch (e) {
+          if (statusNomina) {
+            statusNomina.style.color = 'var(--accent)';
+            statusNomina.textContent = `Error: ${e.message}`;
+          }
+          alert(`Error al importar nómina: ${e.message}`);
+        } finally {
+          btnEnviarNomina.disabled = false;
+        }
+      });
+    }
 
     // Selector de estudiante para tutores
     const selStudent = document.getElementById('select-active-student');

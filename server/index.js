@@ -20,6 +20,7 @@ import {
 } from './pedagogyEngine.js';
 import { RUBRICA_REFLEXION, calcularResumenReflexion } from './reflectionEval.js';
 import { getTranscriptionConfig, saveTranscriptionConfig, transcribirAudio } from './transcriptionService.js';
+import { importarListaCurso, sincronizarListasDeCursos } from './courseImporter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -100,9 +101,15 @@ const server = createServer(async (req, res) => {
       if (!email || !password) {
         return sendJson(res, 400, { error: 'Faltan credenciales' });
       }
-      const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.trim().toLowerCase());
-      if (!user || !verifyPassword(password, user.password_hash, user.salt)) {
-        return sendJson(res, 401, { error: 'Correo o contraseña incorrectos' });
+      const rawIdent = (email || '').trim().toLowerCase();
+      const cleanR = rawIdent.replace(/[^0-9kK]/g, '');
+      const user = db.prepare(`
+        SELECT * FROM users 
+        WHERE lower(email) = ? OR lower(rut) = ? OR replace(replace(lower(rut), '.', ''), '-', '') = ?
+      `).get(rawIdent, rawIdent, cleanR);
+
+      if (!user || !verifyPassword(password, user.password_hash, user.salt, user)) {
+        return sendJson(res, 401, { error: 'Correo/RUT o contraseña incorrectos' });
       }
       const session = createSession(user.id);
       res.setHeader('Set-Cookie', `session_token=${session.token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 3600}`);
@@ -111,8 +118,11 @@ const server = createServer(async (req, res) => {
         user: {
           id: user.id,
           email: user.email,
+          rut: user.rut,
           name: user.name,
           role: user.role,
+          curso: user.curso,
+          seccion: user.seccion,
           institucion: user.institucion
         }
       });
@@ -145,8 +155,60 @@ const server = createServer(async (req, res) => {
   if (pathname === '/api/users/practicantes' && method === 'GET') {
     const user = authenticateRequest(req);
     if (!user) return sendJson(res, 401, { error: 'No autorizado' });
-    const practicantes = db.prepare('SELECT id, email, name, role, created_at FROM users WHERE role = ? ORDER BY name ASC').all('estudiante');
+    const practicantes = db.prepare('SELECT id, email, rut, name, role, curso, seccion, created_at FROM users WHERE role = ? ORDER BY seccion ASC, name ASC').all('estudiante');
     return sendJson(res, 200, { practicantes });
+  }
+
+  // API: Lista general de estudiantes matriculados y cursos
+  if (pathname === '/api/cursos/estudiantes' && method === 'GET') {
+    const user = authenticateRequest(req);
+    if (!user) return sendJson(res, 401, { error: 'No autorizado' });
+
+    const estudiantes = db.prepare(`
+      SELECT u.id, u.name, u.email, u.rut, u.curso, u.seccion,
+             COUNT(i.id) as intervenciones_count
+      FROM users u
+      LEFT JOIN intervenciones i ON u.id = i.user_id
+      WHERE u.role = 'estudiante'
+      GROUP BY u.id
+      ORDER BY u.seccion ASC, u.name ASC
+    `).all();
+
+    const dir = join(rootDir, 'Listas de cursos');
+    const archivos = existsSync(dir) ? readdirSync(dir).filter(f => f.endsWith('.xlsx') && !f.startsWith('~$')) : [];
+
+    return sendJson(res, 200, { estudiantes, archivos });
+  }
+
+  // API: Subir e importar archivo Excel de nuevo curso
+  if (pathname === '/api/cursos/subir-excel' && method === 'POST') {
+    const user = authenticateRequest(req);
+    if (!user || (user.role !== 'tutor' && user.role !== 'admin')) {
+      return sendJson(res, 403, { error: 'Solo los formadores pueden subir nóminas de curso' });
+    }
+
+    const dir = join(rootDir, 'Listas de cursos');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+
+    const rawFilename = req.headers['x-filename'] ? decodeURIComponent(req.headers['x-filename']) : `curso-${Date.now()}.xlsx`;
+    const targetFile = join(dir, rawFilename);
+
+    const writeStream = createWriteStream(targetFile);
+    req.pipe(writeStream);
+
+    writeStream.on('finish', async () => {
+      try {
+        const resultado = await importarListaCurso(targetFile);
+        sendJson(res, 200, { ok: true, filename: rawFilename, resultado });
+      } catch (err) {
+        sendJson(res, 500, { error: `Error procesando nómina de curso: ${err.message}` });
+      }
+    });
+
+    writeStream.on('error', err => {
+      sendJson(res, 500, { error: `Error guardando archivo: ${err.message}` });
+    });
+    return;
   }
 
   // ============================================================
@@ -909,12 +971,18 @@ const server = createServer(async (req, res) => {
 
 server.setTimeout(600000); // 10 minutos para procesar grabaciones largas en múltiples pases de IA
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`=======================================================`);
   console.log(` Plataforma Observa-Retro · Práctica Pedagógica III`);
   console.log(` Servidor activo en http://localhost:${PORT}`);
   console.log(` Base de datos persistente SQLite: observa_retro.db`);
   console.log(`=======================================================`);
+  try {
+    const syncRes = await sincronizarListasDeCursos();
+    console.log(`[Cursos] Sincronización automática: ${syncRes.length} nómina(s) procesada(s).`);
+  } catch (err) {
+    console.warn(`[Cursos] Aviso en sincronización inicial:`, err.message);
+  }
 });
 
 export default server;
