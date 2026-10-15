@@ -124,7 +124,7 @@ const App = {
             <p class="lead" style="margin:4px 0 16px;">Acompañamiento Formativo y Diagnóstico en Práctica Pedagógica III<br><small>UCSC · Facultad de Educación · CIAE BASAL</small></p>
           </div>
 
-          <div style="background:#e8f4f2; border:1px solid #1B4943; border-radius:6px; padding:12px 14px; margin-bottom:16px; font-size:0.88rem; color:#1B4943; line-height:1.45;">
+          <div style="background:var(--board-soft); border:1px solid var(--board); border-radius:6px; padding:12px 14px; margin-bottom:16px; font-size:0.88rem; color:var(--board-dark); line-height:1.45;">
             💡 <b>Acceso Institucional:</b><br>
             Ingresa con tu <b>RUT</b> (sin puntos ni guion) o tu <b>correo institucional</b> (@ucsc.cl / @alumnos.ucsc.cl).
           </div>
@@ -399,7 +399,7 @@ const App = {
             ` : ''}
 
             <div class="row" id="row-transcribir-audio" style="margin-top:-6px; margin-bottom:4px;">
-              <button type="button" class="btn min" id="btn-transcribir-audio-ia" style="background:#1B4943; color:#fff;">
+              <button type="button" class="btn min" id="btn-transcribir-audio-ia">
                 ✨ Transcribir audio automáticamente con IA
               </button>
               ${isTutor ? `
@@ -1031,7 +1031,7 @@ const App = {
           </button>
         </div>
 
-        <div style="background:#e8f4f2; border-left:4px solid var(--board); border-radius:6px; padding:16px 18px; margin-bottom:24px;">
+        <div style="background:var(--board-soft); border-left:4px solid var(--board); border-radius:6px; padding:16px 18px; margin-bottom:24px;">
           <h3 style="margin:0 0 6px; color:var(--board); font-size:1.05rem;">🎯 Sentido Pedagógico y Formativo</h3>
           <p style="margin:0; font-size:0.92rem; line-height:1.55; color:var(--ink);">
             La plataforma <b>Observa-Retro</b> es un dispositivo de <b>acompañamiento formativo y diagnóstico</b>, no una herramienta punitiva o de calificación automática. Su propósito es ayudarte a mirar tu propia práctica docente a partir de <b>evidencias observables</b> de aula (lo que tú y tus estudiantes realmente dijeron e hicieron) y facilitar un diálogo reflexivo profundo con tus profesores formadores para la mejora continua de la enseñanza de la matemática.
@@ -2029,12 +2029,12 @@ const App = {
   getEpColor(tipo) {
     const map = {
       presentacion_tarea: '#3E7CB1',
-      explicacion: '#2F6F64',
+      explicacion: '#C9252C',
       discusion: '#C9A227',
-      trabajo_estudiantes: '#86A98B',
+      trabajo_estudiantes: '#5C8276',
       error: '#8E5572',
       retroalimentacion: '#4F5FA8',
-      cierre: '#1D3B4F'
+      cierre: '#2B2D2F'
     };
     return map[tipo] || '#8A9695';
   },

@@ -1,28 +1,35 @@
 :root {
   box-sizing: border-box;
-  --paper: #F4F7F5;
+  --paper: #F8F9FA;
   --surface: #FFFFFF;
-  --sunken: #EBF1EE;
-  --ink: #142628;
-  --muted: #536767;
-  --line: #CFDBD7;
-  --board: #1B4943;
-  --board-hover: #143833;
-  --board-fg: #EDF6F2;
-  --board-soft: #D7E9E3;
-  --marker: #E5BE27;
-  --marker-soft: #FAF3D2;
-  --contra: #46559C;
-  --contra-soft: #E3E6F5;
-  --amb: #849190;
-  --c1: #C0DBD1;
-  --c2: #5B9E8D;
-  --c3: #1B4943;
+  --sunken: #EEF1F4;
+  --ink: #212529;
+  --muted: #646567;
+  --line: #DDE2E5;
+  
+  /* Identidad Institucional UCSC (Rojo Pantone 1795C y Gris Institucional) */
+  --board: #C9252C;
+  --board-hover: #A81B21;
+  --board-fg: #FFFFFF;
+  --board-soft: #FDE8E9;
+  --board-dark: #8E151A;
+  
+  --marker: #E09F3E;
+  --marker-soft: #FFF5E5;
+  --contra: #415A77;
+  --contra-soft: #E9ECEF;
+  --amb: #778DA9;
+  
+  /* Categorías didácticas */
+  --c1: #F8D7DA;
+  --c2: #E57373;
+  --c3: #C9252C;
+  
   --warn: #855500;
   --warn-bg: #FFF3D1;
   --success: #1E7E55;
   --success-bg: #E3F5EC;
-  --danger: #9E2A2B;
+  --danger: #C9252C;
   --danger-bg: #FBEAEA;
   --sans: "Instrument Sans", system-ui, -apple-system, sans-serif;
   --serif: "Literata", Georgia, serif;
@@ -58,7 +65,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Sidebar */
 .sidebar {
-  background: var(--board);
+  background: var(--board-dark);
   color: var(--board-fg);
   padding: 20px 16px;
   display: flex;
@@ -81,14 +88,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
   display: block;
   font-weight: 400;
   font-size: 0.8rem;
-  opacity: 0.85;
+  opacity: 0.88;
   letter-spacing: 0;
   margin-top: 3px;
 }
 
 /* User Card in Sidebar */
 .user-badge {
-  background: color-mix(in srgb, var(--board-fg) 10%, transparent);
+  background: color-mix(in srgb, var(--board-fg) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--board-fg) 25%, transparent);
   border-radius: 8px;
   padding: 10px 12px;
@@ -101,15 +108,16 @@ button, input, select, textarea { font: inherit; color: inherit; }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: var(--marker);
-  color: #2D2300;
-  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--board-dark);
+  padding: 2px 7px;
   border-radius: 4px;
   margin-top: 4px;
 }
 .user-role-tag.tutor {
-  background: #C4D2FF;
-  color: #162459;
+  background: #FFF0F1;
+  color: var(--board-dark);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 /* Sidebar Nav */
@@ -119,7 +127,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: color-mix(in srgb, var(--board-fg) 70%, transparent);
+  color: color-mix(in srgb, var(--board-fg) 75%, transparent);
   margin: 10px 8px 4px;
 }
 .nav-btn {
@@ -137,17 +145,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
   align-items: center;
   transition: background 0.15s;
 }
-.nav-btn:hover { background: color-mix(in srgb, var(--board-fg) 14%, transparent); }
+.nav-btn:hover { background: color-mix(in srgb, var(--board-fg) 15%, transparent); }
 .nav-btn.active {
   background: var(--board-fg);
-  color: var(--board);
+  color: var(--board-dark);
   font-weight: 600;
 }
-.nav-btn small { display: block; font-size: 0.78rem; opacity: 0.8; font-weight: normal; }
+.nav-btn small { display: block; font-size: 0.78rem; opacity: 0.85; font-weight: normal; }
 
 .btn-nueva {
-  background: color-mix(in srgb, var(--marker) 20%, transparent);
-  border: 1.5px solid var(--marker);
+  background: color-mix(in srgb, var(--board-fg) 15%, transparent);
+  border: 1.5px solid var(--board-fg);
   color: var(--board-fg);
   font-weight: 600;
   text-align: center;
@@ -155,8 +163,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   padding: 9px;
   border-radius: 6px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
-.btn-nueva:hover { background: var(--marker); color: #1B4943; }
+.btn-nueva:hover { background: #FFFFFF; color: var(--board-dark); }
 
 .sidebar-footer {
   margin-top: auto;
