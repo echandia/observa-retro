@@ -249,14 +249,7 @@ const App = {
           </h2>
         </div>
         <div class="row">
-          ${isTutor ? `
-          <button class="btn secondary min" id="btn-config-ia-modal">
-            ⚙️ Configurar Transcripción IA
-          </button>
-          ` : ''}
-          <button class="btn secondary min" id="btn-quick-switch-role">
-            Cambiar a rol ${isTutor ? 'Estudiante' : 'Formador/Tutor'}
-          </button>
+          <span class="meta" style="font-size:0.85rem; font-weight:600;">Práctica Pedagógica III · UCSC</span>
         </div>
       </div>
     `;
@@ -402,11 +395,6 @@ const App = {
               <button type="button" class="btn min" id="btn-transcribir-audio-ia">
                 ✨ Transcribir audio automáticamente con IA
               </button>
-              ${isTutor ? `
-              <button type="button" class="btn secondary min" id="btn-config-ia-shortcut">
-                ⚙️ Configurar API Key (Gemini/Whisper)
-              </button>
-              ` : ''}
               <span id="transcribiendo-spinner" class="meta" style="font-weight:600; color:var(--board);"></span>
             </div>
 
@@ -1311,12 +1299,6 @@ const App = {
       });
     }
 
-    // Modal de configuración de Transcripción con IA (Solo Formadores)
-    const btnConfigIA = document.getElementById('btn-config-ia-modal');
-    if (btnConfigIA) {
-      btnConfigIA.addEventListener('click', () => this.openConfigModal());
-    }
-
     // Navegación Sidebar
     document.querySelectorAll('[data-nav-int]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1572,7 +1554,7 @@ const App = {
         try {
           const res = await window.API.transcribirIntervencionAudio(this.state.currentInterv.intervencion.id);
           if (res.error_code === 'NO_API_KEY') {
-            this.openConfigModal(res.message);
+            alert('El servicio de transcripción automática no se encuentra configurado en el servidor. Comunícate con el docente responsable.');
             return;
           }
           if (res.error_code === 'TRANSCRIPTION_BUSY') {
@@ -1654,7 +1636,7 @@ const App = {
 
           if (result.error_code === 'NO_API_KEY') {
             spinner.textContent = '';
-            this.openConfigModal(result.message);
+            alert('El servicio de transcripción automática no se encuentra configurado en el servidor. Comunícate con el docente responsable o sube tu transcripción en archivo Word (.docx).');
             return;
           }
           if (result.error_code === 'TRANSCRIPTION_BUSY') {
@@ -1674,11 +1656,6 @@ const App = {
           btnTransIA.disabled = false;
         }
       });
-    }
-
-    const btnConfigIA = document.getElementById('btn-config-ia-shortcut');
-    if (btnConfigIA) {
-      btnConfigIA.addEventListener('click', () => this.openConfigModal());
     }
 
     const inputTransFile = document.getElementById('input-trans-file');
