@@ -438,4 +438,39 @@ for (const f of formadoresOficiales) {
   }
 }
 
+// Estudiantes Oficiales Sección 2 (Profesor Formador: Prof. Samuel Pereira)
+const estudiantesSeccion2 = [
+  { rut: '21779040', name: 'Catalina Arriagada Pradenas', email: 'c.arriagada@ematematica.ucsc.cl' },
+  { rut: '21753235', name: 'Alejandra Estrada Estrada', email: 'aestrada@ematematica.ucsc.cl' },
+  { rut: '22083995', name: 'Benjamín Figueroa San Martín', email: 'bfigueroa@ematematica.ucsc.cl' },
+  { rut: '22008586', name: 'Bárbara Fuentealba Reyes', email: 'bfuentealbar@ematematica.ucsc.cl' },
+  { rut: '21912652', name: 'Juan Gallegos Peña', email: 'jgallegos@ematematica.ucsc.cl' },
+  { rut: '21921704', name: 'Diego González Manquehual', email: 'dgonzalezm@ematematica.ucsc.cl' },
+  { rut: '22017347', name: 'María Landera Palma', email: 'mlandera@ematematica.ucsc.cl' },
+  { rut: '19167688', name: 'Neftalí Muñoz Salgado', email: 'nmunoz@ematematica.ucsc.cl' },
+  { rut: '21271873', name: 'Javiera Ignacia Muñoz Sepúlveda', email: 'jmunoz@ematematica.ucsc.cl' },
+  { rut: '21876877', name: 'Francisco Alonso Ramírez Sandoval', email: 'framirez@ematematica.ucsc.cl' },
+  { rut: '22002867', name: 'Sebastián Ignacio Rivera Ortega', email: 'srivera@ematematica.ucsc.cl' },
+  { rut: '21540124', name: 'Demian Salazar Cerna', email: 'dsalazar@ematematica.ucsc.cl' },
+  { rut: '20751059', name: 'Rodrigo Sandoval Vásquez', email: 'rsandoval@ematematica.ucsc.cl' },
+  { rut: '21391796', name: 'Disan Soto Pereira', email: 'dsoto@ematematica.ucsc.cl' },
+  { rut: '22026285', name: 'Francisca Vega Flores', email: 'fvega@ematematica.ucsc.cl' }
+];
+
+for (const s of estudiantesSeccion2) {
+  const existing = db.prepare('SELECT id FROM users WHERE rut = ? OR email = ?').get(s.rut, s.email);
+  if (!existing) {
+    const salt = randomBytes(16).toString('hex');
+    const pwdHash = hash('practica2026', salt);
+    db.prepare(`
+      INSERT INTO users (id, email, password_hash, salt, name, role, institucion, rut, curso, seccion, created_at)
+      VALUES (?, ?, ?, ?, ?, 'estudiante', 'UCSC', ?, 'ED1360C', 'Sec. 2', datetime('now'))
+    `).run(`est-${s.rut}`, s.email, pwdHash, salt, s.name, s.rut);
+  } else {
+    db.prepare(`
+      UPDATE users SET name = ?, rut = ?, email = ?, curso = 'ED1360C', seccion = 'Sec. 2' WHERE id = ?
+    `).run(s.name, s.rut, s.email, existing.id);
+  }
+}
+
 export default db;

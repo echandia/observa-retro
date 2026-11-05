@@ -103,10 +103,29 @@ const server = createServer(async (req, res) => {
       }
       const rawIdent = (email || '').trim().toLowerCase();
       const cleanR = rawIdent.replace(/[^0-9kK]/g, '');
-      const user = db.prepare(`
+      const cleanRNoDv = cleanR.length >= 8 ? cleanR.slice(0, -1) : cleanR;
+      
+      let user = db.prepare(`
         SELECT * FROM users 
-        WHERE lower(email) = ? OR lower(rut) = ? OR replace(replace(lower(rut), '.', ''), '-', '') = ?
-      `).get(rawIdent, rawIdent, cleanR);
+        WHERE lower(email) = ? 
+           OR lower(rut) = ? 
+           OR replace(replace(lower(rut), '.', ''), '-', '') = ?
+           OR replace(replace(lower(rut), '.', ''), '-', '') = ?
+      `).get(rawIdent, rawIdent, cleanR, cleanRNoDv);
+
+      // Si no se encuentra y el usuario ingresó un correo o prefijo, buscar por prefijo de correo
+      if (!user && rawIdent.includes('@')) {
+        const prefix = rawIdent.split('@')[0];
+        user = db.prepare(`
+          SELECT * FROM users 
+          WHERE lower(email) LIKE ? || '@%'
+        `).get(prefix);
+      } else if (!user && cleanR.length === 0 && rawIdent.length > 2) {
+        user = db.prepare(`
+          SELECT * FROM users 
+          WHERE lower(email) LIKE ? || '@%'
+        `).get(rawIdent);
+      }
 
       if (!user || !verifyPassword(password, user.password_hash, user.salt, user)) {
         return sendJson(res, 401, { error: 'Correo/RUT o contraseña incorrectos' });

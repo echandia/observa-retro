@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { scryptSync, randomBytes } from 'node:crypto';
 import db from './db.js';
 
@@ -57,6 +57,41 @@ function generateStudentEmail(emailPrefix, rut) {
   return `${cRut}@alumnos.ucsc.cl`;
 }
 
+export function parseCourseCsv(filePath) {
+  const content = readFileSync(filePath, 'utf-8');
+  const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+  const students = [];
+  let headerSkipped = false;
+
+  for (const line of lines) {
+    const cols = line.split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
+    if (!headerSkipped) {
+      if (cols.some(c => c.toLowerCase().includes('nombre') || c.toLowerCase().includes('rut'))) {
+        headerSkipped = true;
+        continue;
+      }
+    }
+    if (cols.length >= 3) {
+      const nom = cols[0];
+      const ape = cols[1];
+      const rut = cols[2];
+      const email = cols[3] || '';
+      const fullName = `${toTitleCase(nom)} ${toTitleCase(ape)}`.trim();
+      students.push({
+        rut,
+        name: fullName,
+        email: email.trim().toLowerCase()
+      });
+    }
+  }
+
+  return {
+    course_title: 'ED1360C - Práctica Pedagógica III (Sec. 2)',
+    instructor: 'Prof. Samuel Pereira',
+    students
+  };
+}
+
 export function parseCourseXlsx(filePath) {
   return new Promise((resolve, reject) => {
     execFile('python3', [pythonScript, filePath], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
@@ -77,16 +112,17 @@ export function parseCourseXlsx(filePath) {
  * Importa un archivo de curso específico a la base de datos
  */
 export async function importarListaCurso(filePath) {
-  const data = await parseCourseXlsx(filePath);
   const fname = basename(filePath);
+  const isCsv = fname.endsWith('.csv');
+  const data = isCsv ? parseCourseCsv(filePath) : await parseCourseXlsx(filePath);
 
   // Detectar código y sección
   let cursoCodigo = 'ED1360C';
   let seccion = 'Sec. 1';
 
-  if (fname.includes('_2_') || (data.course_title && data.course_title.toLowerCase().includes('sec.2'))) {
+  if (fname.includes('_2_') || fname.includes('Seccion_2') || fname.includes('sec2') || (data.course_title && data.course_title.toLowerCase().includes('sec. 2'))) {
     seccion = 'Sec. 2';
-  } else if (fname.includes('_1_') || (data.course_title && data.course_title.toLowerCase().includes('sec.1'))) {
+  } else if (fname.includes('_1_') || fname.includes('Seccion_1') || fname.includes('sec1') || (data.course_title && data.course_title.toLowerCase().includes('sec. 1'))) {
     seccion = 'Sec. 1';
   }
 
@@ -134,8 +170,9 @@ export async function importarListaCurso(filePath) {
     const r = cleanRut(st.rut);
     if (!r) continue;
 
-    const { formatted: formattedName, emailPrefix } = formatStudentName(st.name);
-    const email = generateStudentEmail(emailPrefix, r);
+    const formattedName = st.name.includes(',') ? formatStudentName(st.name).formatted : toTitleCase(st.name);
+    const emailPrefix = formatStudentName(st.name).emailPrefix;
+    const email = st.email ? st.email.trim().toLowerCase() : generateStudentEmail(emailPrefix, r);
     const existing = stmtFind.get(r, email);
 
     if (existing) {
@@ -164,13 +201,13 @@ export async function importarListaCurso(filePath) {
 }
 
 /**
- * Escanea la carpeta 'Listas de cursos/' e importa automáticamente todos los archivos Excel disponibles
+ * Escanea la carpeta 'Listas de cursos/' e importa automáticamente todos los archivos Excel y CSV disponibles
  */
 export async function sincronizarListasDeCursos() {
   const dir = join(rootDir, 'Listas de cursos');
   if (!existsSync(dir)) return [];
 
-  const files = readdirSync(dir).filter(f => f.endsWith('.xlsx') && !f.startsWith('~$'));
+  const files = readdirSync(dir).filter(f => (f.endsWith('.xlsx') || f.endsWith('.csv')) && !f.startsWith('~$'));
   const resultados = [];
 
   for (const file of files) {

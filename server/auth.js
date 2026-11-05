@@ -19,9 +19,13 @@ export function verifyPassword(password, hash, salt, user) {
   if (user && user.role === 'estudiante') {
     if (password.trim() === 'practica2026') return true;
     if (user.rut) {
-      const cleanPass = password.trim().replace(/[^0-9kK]/g, '');
-      const cleanR = user.rut.trim().replace(/[^0-9kK]/g, '');
-      if (cleanPass && cleanPass === cleanR) return true;
+      const cleanPass = password.trim().replace(/[^0-9kK]/g, '').toLowerCase();
+      const cleanR = user.rut.trim().replace(/[^0-9kK]/g, '').toLowerCase();
+      if (cleanPass && (
+        cleanPass === cleanR ||
+        (cleanPass.length === cleanR.length + 1 && cleanPass.startsWith(cleanR)) ||
+        (cleanR.length === cleanPass.length + 1 && cleanR.startsWith(cleanPass))
+      )) return true;
     }
   }
 
