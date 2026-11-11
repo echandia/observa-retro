@@ -432,6 +432,14 @@ export function valorarRubricaSecuencias(lineas, episodios, evidencias, tienePla
 
     return {
       id: r.id,
+      nombre: r.nombre,
+      dim: r.dim,
+      dimN: r.dimN,
+      descripcion: r.d2,
+      d3: r.d3,
+      d2: r.d2,
+      d1: r.d1,
+      exige: r.exige,
       nivel,
       evidencias: evs,
       justificacion,

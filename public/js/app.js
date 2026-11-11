@@ -236,9 +236,11 @@ const App = {
           <button class="nav-btn ${this.state.view === 'trayectoria' ? 'active' : ''}" id="btn-nav-trayectoria">
             Trayectoria de competencias
           </button>
+          ${isTutor ? `
           <button class="nav-btn ${this.state.view === 'avance_reflexivo' ? 'active' : ''}" id="btn-nav-avance-ref">
             Avance en la reflexión
           </button>
+          ` : ''}
           <button class="nav-btn ${this.state.view === 'guia' ? 'active' : ''}" id="btn-nav-guia">
             📖 Guía del practicante
           </button>
@@ -304,6 +306,7 @@ const App = {
 
   renderDashboard() {
     const list = this.state.intervenciones;
+    const isTutor = this.state.user && (this.state.user.role === 'tutor' || this.state.user.role === 'admin');
     return `
       <div>
         <p class="lead">
@@ -332,7 +335,7 @@ const App = {
 
         ${!list.length ? `
           <div style="background:var(--surface); border:1px dashed var(--line); border-radius:8px; padding:32px; text-align:center;">
-            ${(this.state.user.role === 'tutor' || this.state.user.role === 'admin') ? `
+            ${isTutor ? `
               <p class="meta">Aún no hay intervenciones registradas para este practicante.</p>
               <button class="btn secondary min" id="btn-dash-cargar-demo" style="margin-top:8px;">Cargar ejemplo demostrativo</button>
             ` : `
@@ -353,7 +356,7 @@ const App = {
               <thead>
                 <tr>
                   <th>#</th>
-                  ${(this.state.user.role === 'tutor' || this.state.user.role === 'admin') ? '<th>Practicante</th>' : ''}
+                  ${isTutor ? '<th>Practicante</th>' : ''}
                   <th>Fecha</th>
                   <th>Curso</th>
                   <th>Contenido / Tarea Matemática</th>
@@ -361,7 +364,7 @@ const App = {
                   <th>Registro / Audio</th>
                   <th>Análisis</th>
                   <th>Chatbot Reflexivo</th>
-                  <th>Evaluación Formador</th>
+                  ${isTutor ? '<th>Evaluación Formador</th>' : ''}
                   <th>Acción</th>
                 </tr>
               </thead>
@@ -369,7 +372,7 @@ const App = {
                 ${list.map((item, idx) => `
                   <tr>
                     <td><b>${idx + 1}</b></td>
-                    ${(this.state.user.role === 'tutor' || this.state.user.role === 'admin') ? `<td><b>${this.escapeHtml(item.student_name || '—')}</b></td>` : ''}
+                    ${isTutor ? `<td><b>${this.escapeHtml(item.student_name || '—')}</b></td>` : ''}
                     <td>${this.formatFecha(item.fecha)}</td>
                     <td>${this.escapeHtml(item.curso || '—')}</td>
                     <td><b>${this.escapeHtml(item.contenido)}</b></td>
@@ -395,7 +398,7 @@ const App = {
                         <span class="meta">Sin iniciar</span>
                       `}
                     </td>
-                    <td>${item.evaluacionReflexiva ? `<span class="user-role-tag tutor">${this.escapeHtml(item.evaluacionReflexiva)}</span>` : '<span class="meta">Sin evaluar</span>'}</td>
+                    ${isTutor ? `<td>${item.evaluacionReflexiva ? `<span class="user-role-tag tutor">${this.escapeHtml(item.evaluacionReflexiva)}</span>` : '<span class="meta">Sin evaluar</span>'}</td>` : ''}
                     <td>
                       <button class="btn min secondary" data-open-int="${item.id}" title="Abrir y editar clase">Abrir</button>
                     </td>
@@ -557,12 +560,19 @@ const App = {
     const interv = data.intervencion;
     const isTutor = this.state.user.role === 'tutor' || this.state.user.role === 'admin';
 
+    // Ocultar supervisión de diálogo y evaluación reflexiva a los estudiantes
+    if (!isTutor && (this.state.tab === 'supervision' || this.state.tab === 'eval_reflexiva')) {
+      this.state.tab = 'registro';
+    }
+
     const tabs = [
       ['registro', 'Registro y evidencias'],
       ['rubrica', 'Matriz de secuencias (19 criterios)'],
       ['reflexion', 'Reflexión guiada con Chatbot'],
-      ['supervision', 'Supervisión de diálogo'],
-      ['eval_reflexiva', 'Evaluación de la reflexión'],
+      ...(isTutor ? [
+        ['supervision', 'Supervisión de diálogo'],
+        ['eval_reflexiva', 'Evaluación de la reflexión']
+      ] : []),
       ['reporte', 'Reporte formativo']
     ];
 
@@ -570,8 +580,8 @@ const App = {
     if (this.state.tab === 'registro') contentHtml = this.renderTabRegistro();
     else if (this.state.tab === 'rubrica') contentHtml = this.renderTabRubrica();
     else if (this.state.tab === 'reflexion') contentHtml = this.renderTabReflexion();
-    else if (this.state.tab === 'supervision') contentHtml = this.renderTabSupervision();
-    else if (this.state.tab === 'eval_reflexiva') contentHtml = this.renderTabEvalReflexiva();
+    else if (isTutor && this.state.tab === 'supervision') contentHtml = this.renderTabSupervision();
+    else if (isTutor && this.state.tab === 'eval_reflexiva') contentHtml = this.renderTabEvalReflexiva();
     else if (this.state.tab === 'reporte') contentHtml = this.renderTabReporte();
 
     return `
@@ -998,8 +1008,125 @@ const App = {
     const isTutor = this.state.user.role === 'tutor' || this.state.user.role === 'admin';
     const criterios = an.rubrica.criterios || [];
 
+    const CRITERIOS_MAP = {
+      "1.1": {
+        dim: "Planificación",
+        nombre: "Objetivos de aprendizaje y habilidades matemáticas",
+        desc: "Objetivos claros y medibles articulados con habilidades matemáticas específicas (resolver problemas, modelar, representar, argumentar) y con las tareas.",
+        exige: "OA, objetivos de sesión y habilidades matemáticas explicitadas."
+      },
+      "1.2": {
+        dim: "Planificación",
+        nombre: "Selección y secuenciación de tareas matemáticas",
+        desc: "Progresión coherente de demanda cognitiva debidamente justificada entre las fases de inicio, desarrollo y consolidación.",
+        exige: "Secuencia de tareas, preguntas y consignas planificadas."
+      },
+      "1.3": {
+        dim: "Planificación",
+        nombre: "Anticipación de dificultades y errores escolares",
+        desc: "Anticipa estrategias posibles y errores conceptuales o procedimentales explicando su fundamento matemático y didáctico.",
+        exige: "Anticipaciones escritas frente a tareas y procedimientos concretos."
+      },
+      "1.4": {
+        dim: "Planificación",
+        nombre: "Gestión pedagógica de los errores anticipados",
+        desc: "Estrategias didácticas diferenciadas orientadas a usar el error como palanca y oportunidad formativa de aprendizaje matemático.",
+        exige: "Respuestas docentes previstas ante dudas y errores escolares."
+      },
+      "1.5": {
+        dim: "Planificación",
+        nombre: "Consideración de la diversidad y contexto escolar",
+        desc: "Incorpora el diagnóstico del curso y ajusta objetivos, tareas o apoyos a la diversidad y barreras de aprendizaje.",
+        exige: "Ajustes de participación, acceso y niveles de desafío."
+      },
+      "2.1": {
+        dim: "Implementación",
+        nombre: "Habilidades matemáticas promovidas en aula",
+        desc: "Promoción explícita y sostenida de resolver problemas, representar, modelar y argumentar durante el diálogo de clase.",
+        exige: "Consignas, preguntas formuladas y producciones escolares observadas."
+      },
+      "2.2": {
+        dim: "Implementación",
+        nombre: "Monitoreo e interpretación de los desempeños",
+        desc: "Recoge evidencias de distintas estrategias, las interpreta en vivo y adapta apoyos y desafíos sin sustituir el razonamiento escolar.",
+        exige: "Preguntas de monitoreo, escucha atenta e intervenciones docentes registradas."
+      },
+      "2.3": {
+        dim: "Implementación",
+        nombre: "Gestión de preguntas y debate matemático",
+        desc: "Formula preguntas abiertas de alto nivel cognitivo que generan discusión reflexiva y confrontación productiva de estrategias.",
+        exige: "Preguntas abiertas, justificaciones estudiantiles y contraste de procedimientos."
+      },
+      "2.4": {
+        dim: "Implementación",
+        nombre: "Pertinencia de medios y representaciones didácticas",
+        desc: "Integra representaciones (concreta, pictórica, gráfica y simbólica) conectándolas directamente con las ideas matemáticas de los estudiantes.",
+        exige: "Representaciones, recursos y materiales empleados en la interacción."
+      },
+      "2.5": {
+        dim: "Implementación",
+        nombre: "Inclusión, equidad y participación democrática",
+        desc: "Estrategias activas para garantizar la participación equitativa de todos los estudiantes, apoyos diversificados y lenguaje inclusivo.",
+        exige: "Distribución de turnos de habla, apoyos pedagógicos y eliminación de barreras."
+      },
+      "2.6": {
+        dim: "Implementación",
+        nombre: "Idoneidad epistémica y corrección matemática",
+        desc: "Significados matemáticos correctos, precisos y rigurosos del objeto en juego, evitando deslices conceptuales en las explicaciones.",
+        exige: "Definiciones, procedimientos, propiedades y justificaciones matemáticas del practicante."
+      },
+      "3.1": {
+        dim: "Evaluación",
+        nombre: "Indicadores de evaluación formulados",
+        desc: "Indicadores claros, observables y estrechamente alineados con los objetivos de aprendizaje y las habilidades matemáticas trabajadas.",
+        exige: "Indicadores expresados en desempeños y criterios de logro verificables."
+      },
+      "3.2": {
+        dim: "Evaluación",
+        nombre: "Tipo y pertinencia del instrumento evaluativo",
+        desc: "Instrumento coherente con el propósito formativo que evidencia habilidades de orden superior y procesos de razonamiento.",
+        exige: "Consignas de evaluación, pautas de cotejo y criterios de logro."
+      },
+      "3.3": {
+        dim: "Evaluación",
+        nombre: "Acciones evaluativas formativas durante la clase",
+        desc: "Articula acciones diagnósticas y formativas en el transcurso de la clase, usando la información para retroalimentar y ajustar la enseñanza.",
+        exige: "Momentos evaluativos en aula (preguntas orales, tickets, observación) y su uso pedagógico."
+      },
+      "3.4": {
+        dim: "Evaluación",
+        nombre: "Análisis de resultados y uso formativo",
+        desc: "Analiza logros y brechas relacionando causas didácticas y propone acciones pedagógicas diferenciadas para superar dificultades.",
+        exige: "Análisis de desempeños estudiantiles y decisiones de continuidad."
+      },
+      "4.1": {
+        dim: "Coherencia y reflexión",
+        nombre: "Coherencia entre objetivos y aprendizajes abordados",
+        desc: "Las metas centrales de la clase se traducen en oportunidades efectivas y profundas de aprendizaje verificadas en el registro.",
+        exige: "Cruce entre OA previstos y fragmentos de aula donde se desarrollaron."
+      },
+      "4.2": {
+        dim: "Coherencia y reflexión",
+        nombre: "Coherencia entre tareas planificadas e implementadas",
+        desc: "Mantiene o enriquece la demanda cognitiva de las tareas matemáticas previstas, evitando simplificaciones excesivas sin fundamento.",
+        exige: "Consignas planificadas vs consignas efectivas formuladas en aula."
+      },
+      "4.3": {
+        dim: "Coherencia y reflexión",
+        nombre: "Gestión y fundamentación de ajustes en aula",
+        desc: "Explica y fundamenta los ajustes realizados durante la clase relacionando respuestas escolares, anticipaciones previas y efectos en el aprendizaje.",
+        exige: "Desvíos de la planificación y su fundamentación reflexiva."
+      },
+      "4.4": {
+        dim: "Coherencia y reflexión",
+        nombre: "Coherencia entre enseñanza, evaluación y decisiones",
+        desc: "Relaciona explícitamente lo enseñado, las evidencias evaluadas y las decisiones pedagógicas de continuidad para la siguiente práctica.",
+        exige: "Articulación OA - tareas - evaluación formativa y proyección docente."
+      }
+    };
+
     return `
-      <div style="max-width:920px; padding:12px 0;">
+      <div style="max-width:1040px; padding:12px 0;">
         <h2>Matriz de Análisis de Secuencias Didácticas (19 Criterios)</h2>
         <p class="lead">4 dimensiones formativas de Práctica Pedagógica III: Planificación, Implementación, Evaluación, y Coherencia y reflexión.</p>
 
@@ -1007,29 +1134,58 @@ const App = {
           <table>
             <thead>
               <tr>
-                <th>Criterio</th>
-                <th>Nivel</th>
-                <th>Evidencias Observadas</th>
-                <th>Justificación Pedagógica</th>
-                <th>Siguiente Paso</th>
-                ${isTutor ? '<th>Validación Formador</th>' : ''}
+                <th style="min-width:320px;">Criterio y Descripción Formativa</th>
+                <th style="min-width:110px;">Nivel</th>
+                <th style="min-width:200px;">Evidencias Observadas</th>
+                <th style="min-width:220px;">Justificación Pedagógica</th>
+                <th style="min-width:180px;">Siguiente Paso</th>
+                ${isTutor ? '<th style="min-width:90px;">Validación</th>' : ''}
               </tr>
             </thead>
             <tbody>
-              ${criterios.map(c => `
-                <tr>
-                  <td><b>${c.id}</b></td>
-                  <td><span class="cat-pill cat-${c.nivel === 'Destacado' ? '3' : c.nivel === 'Competente' ? '2' : '1'}">${this.escapeHtml(c.nivel)}</span></td>
-                  <td>${(c.evidencias || []).map(e => e.nota || e.cita).join('<br>') || 'Registro'}</td>
-                  <td>${this.escapeHtml(c.justificacion)}</td>
-                  <td>${this.escapeHtml(c.paso)}</td>
-                  ${isTutor ? `
-                    <td>
-                      <button class="btn min secondary" data-val-rub="${c.id}">Validar</button>
+              ${criterios.map(c => {
+                const info = CRITERIOS_MAP[c.id] || {
+                  dim: c.dimN || 'Dimensión',
+                  nombre: c.nombre || `Criterio ${c.id}`,
+                  desc: c.descripcion || c.d2 || 'Descripción del criterio formativo.',
+                  exige: c.exige || 'Evidencias observables en el registro.'
+                };
+                return `
+                  <tr>
+                    <td style="vertical-align:top;">
+                      <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                        <span class="user-role-tag" style="font-size:0.72rem; padding:2px 6px;">${this.escapeHtml(info.dim)}</span>
+                        <b style="color:var(--board); font-size:0.92rem;">${c.id} · ${this.escapeHtml(info.nombre)}</b>
+                      </div>
+                      <div style="font-size:0.83rem; line-height:1.45; color:var(--ink); margin-bottom:4px;">
+                        ${this.escapeHtml(info.desc)}
+                      </div>
+                      <div style="font-size:0.76rem; color:var(--muted); line-height:1.3;">
+                        <b>Evidencia requerida:</b> ${this.escapeHtml(info.exige)}
+                      </div>
                     </td>
-                  ` : ''}
-                </tr>
-              `).join('')}
+                    <td style="vertical-align:top; white-space:nowrap;">
+                      <span class="cat-pill cat-${c.nivel === 'Destacado' ? '3' : c.nivel === 'Competente' ? '2' : '1'}">
+                        ${this.escapeHtml(c.nivel)}
+                      </span>
+                    </td>
+                    <td style="vertical-align:top; font-size:0.85rem; line-height:1.45;">
+                      ${(c.evidencias || []).map(e => `<div style="margin-bottom:4px; padding:3px 6px; background:#f8fafc; border-left:2px solid var(--board); border-radius:2px;">${this.escapeHtml(e.nota || e.cita || '')}</div>`).join('') || '<span class="meta">Registro general</span>'}
+                    </td>
+                    <td style="vertical-align:top; font-size:0.85rem; line-height:1.45;">
+                      ${this.escapeHtml(c.justificacion)}
+                    </td>
+                    <td style="vertical-align:top; font-size:0.85rem; line-height:1.45;">
+                      ${this.escapeHtml(c.paso)}
+                    </td>
+                    ${isTutor ? `
+                      <td style="vertical-align:top; text-align:center;">
+                        <button class="btn min secondary" data-val-rub="${c.id}">Validar</button>
+                      </td>
+                    ` : ''}
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -1463,8 +1619,8 @@ const App = {
                       ` : ''}
                     </div>
 
-                    <!-- 4. Evaluación y Acompañamiento del Formador -->
-                    ${item.evaluacion || (item.revision && (item.revision.retroTutor || item.revision.retroEstudiante)) ? `
+                    <!-- 4. Evaluación y Acompañamiento del Formador (Exclusivo Formadores) -->
+                    ${isTutor && (item.evaluacion || (item.revision && (item.revision.retroTutor || item.revision.retroEstudiante))) ? `
                       <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px 14px;">
                         <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
                           <span>🎓</span>

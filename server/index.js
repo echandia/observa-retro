@@ -278,7 +278,7 @@ const server = createServer(async (req, res) => {
         nTurnosReflexion: nTurnos,
         pasoReflexion: ref ? ref.paso_actual : 0,
         ultimaInteraccionChat: ref ? ref.actualizado_at : null,
-        evaluacionReflexiva: evRef ? evRef.nivel_general : null
+        evaluacionReflexiva: (user.role === 'tutor' || user.role === 'admin') ? (evRef ? evRef.nivel_general : null) : null
       };
     });
 
@@ -360,14 +360,16 @@ const server = createServer(async (req, res) => {
 
     const studentUser = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(interv.user_id);
 
+    const isTutorOrAdmin = user.role === 'tutor' || user.role === 'admin';
+
     return sendJson(res, 200, {
       intervencion: interv,
       estudiante: studentUser,
       lineas,
       analisis,
       reflexion,
-      revision,
-      evaluacionReflexiva
+      revision: isTutorOrAdmin ? revision : null,
+      evaluacionReflexiva: isTutorOrAdmin ? evaluacionReflexiva : null
     });
   }
 
@@ -992,11 +994,11 @@ const server = createServer(async (req, res) => {
   if (pathname.startsWith('/api/estudiantes/') && pathname.endsWith('/trayectoria-reflexiva') && method === 'GET') {
     const user = authenticateRequest(req);
     if (!user) return sendJson(res, 401, { error: 'No autorizado' });
+    if (user.role === 'estudiante') {
+      return sendJson(res, 403, { error: 'La evaluación reflexiva es exclusiva para profesores formadores y tutores' });
+    }
 
     const studentId = pathname.split('/')[3];
-    if (user.role === 'estudiante' && user.id !== studentId) {
-      return sendJson(res, 403, { error: 'Acceso no permitido' });
-    }
 
     const evals = db.prepare(`
       SELECT e.*, i.contenido as intervencion_nombre, i.fecha as intervencion_fecha, u.name as tutor_nombre
@@ -1097,18 +1099,18 @@ const server = createServer(async (req, res) => {
           calidad: anRow.calidad,
           fecha: anRow.fecha
         } : null,
-        evaluacion: evalRow ? {
+        evaluacion: (user.role === 'tutor' || user.role === 'admin') ? (evalRow ? {
           nivelGeneral: evalRow.nivel_general,
           fortalezas: evalRow.fortalezas,
           areasMejora: evalRow.areas_mejora,
           metas: evalRow.metas_proxima_clase,
           fecha: evalRow.fecha
-        } : null,
-        revision: revRow ? {
+        } : null) : null,
+        revision: (user.role === 'tutor' || user.role === 'admin') ? (revRow ? {
           retroEstudiante: revRow.retro_estudiante,
           retroTutor: revRow.retro_tutor,
           fecha: revRow.actualizado_at
-        } : null,
+        } : null) : null,
         creado_at: i.creado_at,
         actualizado_at: i.actualizado_at
       };
