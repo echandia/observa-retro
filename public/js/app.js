@@ -398,9 +398,9 @@ const App = {
               <span id="transcribiendo-spinner" class="meta" style="font-weight:600; color:var(--board);"></span>
             </div>
 
-            <label>Archivo de Transcripción (.docx de Teams/Zoom, .vtt, .srt, .txt, .json Whisper)
-              <span>Opcional: Si ya tienes la transcripción en un archivo Word o texto.</span>
-              <input type="file" id="input-trans-file" accept=".docx,.txt,.vtt,.srt,.json,.md" class="form-control">
+            <label>Archivo de Transcripción (.docx de Teams/Zoom, .pdf, .vtt, .srt, .txt, .json Whisper)
+              <span>Opcional: Si ya tienes la transcripción en un archivo Word, PDF o texto.</span>
+              <input type="file" id="input-trans-file" accept=".docx,.doc,.pdf,.txt,.vtt,.srt,.json,.md" class="form-control">
               <span id="trans-file-status" class="meta" style="color:var(--board);"></span>
             </label>
 
@@ -469,10 +469,10 @@ const App = {
               <textarea id="input-contexto" class="form-control" placeholder="Conocimientos previos, características relevantes del curso..."></textarea>
             </label>
 
-            <label>Planificación de la clase (texto o archivo .docx / .txt)
-              <span>Opcional: Pega el texto o sube tu documento de planificación.</span>
+            <label>Planificación de la clase (texto o archivo Word .docx, .doc, PDF o texto)
+              <span>Opcional: Sube tu archivo de planificación (.docx, .doc, .pdf, .txt) o pega el texto directamente.</span>
               <textarea id="input-planificacion" class="form-control" placeholder="Pega el texto de tu planificación..."></textarea>
-              <input type="file" id="input-plan-file" accept=".docx,.txt,.md" class="form-control" style="margin-top:6px;">
+              <input type="file" id="input-plan-file" accept=".docx,.doc,.pdf,.txt,.md,.odt" class="form-control" style="margin-top:6px;">
               <span id="plan-file-status" class="meta" style="color:var(--board); font-weight:600;"></span>
             </label>
           </fieldset>
@@ -567,31 +567,68 @@ const App = {
     const an = data.analisis;
     const lineas = data.lineas || [];
 
+    const planningHtml = `
+      <div style="background:var(--surface); border:1.5px solid var(--board-soft, #e2e8f0); border-radius:8px; padding:14px 16px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.03);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.15rem;">📋</span>
+            <b style="color:var(--board); font-size:0.96rem;">Planificación Didáctica Oficial de la Clase</b>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <label class="btn secondary min" style="cursor:pointer; margin:0;">
+              📎 ${interv.planificacion ? 'Reemplazar archivo (.docx, .pdf)' : 'Cargar archivo (.docx, .pdf, .txt)'}
+              <input type="file" id="btn-adjuntar-plan-tab" accept=".docx,.doc,.pdf,.txt,.md,.odt" hidden>
+            </label>
+            <button type="button" class="btn secondary min" id="btn-editar-plan-tab">
+              ✏️ ${interv.planificacion ? 'Editar planificación' : 'Escribir planificación'}
+            </button>
+          </div>
+        </div>
+        <div id="plan-tab-status" class="meta" style="margin-bottom:6px;"></div>
+        <div id="plan-tab-display" style="font-size:0.9rem; line-height:1.55; color:var(--ink); background:#fafafa; border:1px solid #eaeaea; border-radius:6px; padding:10px 12px; max-height:180px; overflow-y:auto; white-space:pre-wrap;">
+          ${interv.planificacion ? this.escapeHtml(interv.planificacion) : '<i style="color:var(--muted);">Aún no se ha adjuntado la planificación didáctica de esta clase. Haz clic en "Cargar archivo" para subir tu documento Word (.docx) o PDF, o en "Escribir planificación" para pegarla directamente.</i>'}
+        </div>
+        <div id="plan-tab-edit-box" style="display:none; margin-top:8px;">
+          <textarea id="plan-tab-textarea" class="form-control" style="min-height:120px;" placeholder="Pega o escribe aquí la planificación de la clase...">${this.escapeHtml(interv.planificacion || '')}</textarea>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button type="button" class="btn min" id="btn-guardar-plan-tab">Guardar planificación</button>
+            <button type="button" class="btn secondary min" id="btn-cancelar-plan-tab">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
     if (lineas.length === 0) {
       return `
-        <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:32px 24px; margin-top:16px; text-align:center;">
-          <h2 style="font-size:1.3rem; margin-bottom:8px;">Sin transcripción de aula registrada</h2>
-          <p class="lead" style="margin:8px auto 20px; max-width:600px;">
-            ${interv.audio_path ? `Esta intervención cuenta con el archivo de audio <b>${this.escapeHtml(interv.audio_filename || 'audio.mp3')}</b>. Puedes transcribirlo de forma 100% automatizada con Inteligencia Artificial (reconociendo marcas temporales [mm:ss] y hablantes).` : 'Para analizar la práctica pedagógica, se requiere una transcripción o una grabación de audio.'}
-          </p>
-          ${interv.audio_path ? `
-            <button class="btn" id="btn-transcribir-desde-tab">✨ Transcribir audio automáticamente con IA</button>
-          ` : `
-            <label class="btn" style="cursor:pointer; display:inline-block;">
-              Adjuntar archivo de audio (.mp3, .m4a, .wav)
-              <input type="file" id="btn-adjuntar-audio-tab" accept="audio/*,video/mp4,video/webm" hidden>
-            </label>
-          `}
+        <div>
+          ${planningHtml}
+          <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:32px 24px; margin-top:16px; text-align:center;">
+            <h2 style="font-size:1.3rem; margin-bottom:8px;">Sin transcripción de aula registrada</h2>
+            <p class="lead" style="margin:8px auto 20px; max-width:600px;">
+              ${interv.audio_path ? `Esta intervención cuenta con el archivo de audio <b>${this.escapeHtml(interv.audio_filename || 'audio.mp3')}</b>. Puedes transcribirlo de forma 100% automatizada con Inteligencia Artificial (reconociendo marcas temporales [mm:ss] y hablantes).` : 'Para analizar la práctica pedagógica, se requiere una transcripción o una grabación de audio.'}
+            </p>
+            ${interv.audio_path ? `
+              <button class="btn" id="btn-transcribir-desde-tab">✨ Transcribir audio automáticamente con IA</button>
+            ` : `
+              <label class="btn" style="cursor:pointer; display:inline-block;">
+                Adjuntar archivo de audio (.mp3, .m4a, .wav)
+                <input type="file" id="btn-adjuntar-audio-tab" accept="audio/*,video/mp4,video/webm" hidden>
+              </label>
+            `}
+          </div>
         </div>
       `;
     }
 
     if (!an) {
       return `
-        <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:28px; margin-top:16px; text-align:center;">
-          <h2>Aún no se analiza este registro de aula</h2>
-          <p class="lead" style="margin:8px auto 20px;">El motor de evidencias segmentará la clase en episodios didácticos e identificará citas, marcas de tiempo y contraevidencias vinculadas a las competencias de Práctica III.</p>
-          <button class="btn" id="btn-ejecutar-analisis">Analizar evidencias de la clase</button>
+        <div>
+          ${planningHtml}
+          <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:28px; margin-top:16px; text-align:center;">
+            <h2>Aún no se analiza este registro de aula</h2>
+            <p class="lead" style="margin:8px auto 20px;">El motor de evidencias segmentará la clase en episodios didácticos e identificará citas, marcas de tiempo y contraevidencias vinculadas a las competencias de Práctica III.</p>
+            <button class="btn" id="btn-ejecutar-analisis">Analizar evidencias de la clase</button>
+          </div>
         </div>
       `;
     }
@@ -662,6 +699,7 @@ const App = {
 
     return `
       <div>
+        ${planningHtml}
         ${timelineHtml}
         <div class="two-cols">
           ${transcriptHtml}
@@ -1821,6 +1859,68 @@ const App = {
       });
     }
 
+    const inputPlanTab = document.getElementById('btn-adjuntar-plan-tab');
+    if (inputPlanTab) {
+      inputPlanTab.addEventListener('change', async () => {
+        if (!inputPlanTab.files[0]) return;
+        const file = inputPlanTab.files[0];
+        const statusEl = document.getElementById('plan-tab-status');
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--board); font-weight:600;">⏳ Extrayendo contenido de ${file.name}...</span>`;
+        try {
+          const docData = await window.API.uploadDocumento(file);
+          await window.API.updatePlanificacion(this.state.currentInterv.intervencion.id, docData.text);
+          this.state.currentInterv.intervencion.planificacion = docData.text;
+          const displayEl = document.getElementById('plan-tab-display');
+          if (displayEl) displayEl.textContent = docData.text;
+          const words = (docData.text || '').trim().split(/\s+/).filter(Boolean).length;
+          if (statusEl) statusEl.innerHTML = `<span style="color:#059669; font-weight:700;">✓ Planificación vinculada con éxito (${words} palabras extraídas de ${file.name})</span>`;
+        } catch (e) {
+          if (statusEl) statusEl.innerHTML = `<span style="color:#DC2626; font-weight:600;">❌ Error al cargar planificación: ${e.message}</span>`;
+        }
+      });
+    }
+
+    const btnEditarPlan = document.getElementById('btn-editar-plan-tab');
+    const btnGuardarPlan = document.getElementById('btn-guardar-plan-tab');
+    const btnCancelarPlan = document.getElementById('btn-cancelar-plan-tab');
+    const editBoxPlan = document.getElementById('plan-tab-edit-box');
+    const displayPlan = document.getElementById('plan-tab-display');
+
+    if (btnEditarPlan && editBoxPlan && displayPlan) {
+      btnEditarPlan.addEventListener('click', () => {
+        const isHidden = editBoxPlan.style.display === 'none';
+        editBoxPlan.style.display = isHidden ? 'block' : 'none';
+        displayPlan.style.display = isHidden ? 'none' : 'block';
+      });
+    }
+
+    if (btnCancelarPlan && editBoxPlan && displayPlan) {
+      btnCancelarPlan.addEventListener('click', () => {
+        editBoxPlan.style.display = 'none';
+        displayPlan.style.display = 'block';
+      });
+    }
+
+    if (btnGuardarPlan && editBoxPlan && displayPlan) {
+      btnGuardarPlan.addEventListener('click', async () => {
+        const text = document.getElementById('plan-tab-textarea')?.value || '';
+        const statusEl = document.getElementById('plan-tab-status');
+        btnGuardarPlan.disabled = true;
+        try {
+          await window.API.updatePlanificacion(this.state.currentInterv.intervencion.id, text);
+          this.state.currentInterv.intervencion.planificacion = text;
+          displayPlan.textContent = text || 'Aún no se ha adjuntado la planificación de esta clase.';
+          editBoxPlan.style.display = 'none';
+          displayPlan.style.display = 'block';
+          if (statusEl) statusEl.innerHTML = `<span style="color:#059669; font-weight:700;">✓ Planificación guardada correctamente</span>`;
+        } catch (e) {
+          if (statusEl) statusEl.innerHTML = `<span style="color:#DC2626; font-weight:600;">❌ Error: ${e.message}</span>`;
+        } finally {
+          btnGuardarPlan.disabled = false;
+        }
+      });
+    }
+
     const btnRetranscribir = document.getElementById('btn-retranscribir-audio') || document.getElementById('btn-transcribir-desde-tab');
     if (btnRetranscribir) {
       btnRetranscribir.addEventListener('click', async () => {
@@ -1998,13 +2098,14 @@ const App = {
         const file = inputPlanFile.files[0];
         const statusEl = document.getElementById('plan-file-status');
         const planTextEl = document.getElementById('input-planificacion');
-        if (statusEl) statusEl.textContent = 'Procesando archivo de planificación...';
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--board); font-weight:600;">⏳ Extrayendo contenido de ${file.name}...</span>`;
         try {
           const data = await window.API.uploadDocumento(file);
           if (planTextEl) planTextEl.value = data.text;
-          if (statusEl) statusEl.textContent = `✓ Planificación cargada: ${file.name}`;
+          const words = (data.text || '').trim().split(/\s+/).filter(Boolean).length;
+          if (statusEl) statusEl.innerHTML = `<span style="color:#059669; font-weight:700;">✓ Planificación cargada con éxito (${words} palabras extraídas de ${file.name})</span>`;
         } catch (e) {
-          if (statusEl) statusEl.textContent = `Error al leer archivo: ${e.message}`;
+          if (statusEl) statusEl.innerHTML = `<span style="color:#DC2626; font-weight:600;">❌ Error al leer archivo: ${e.message}</span>`;
         }
       });
     }

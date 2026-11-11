@@ -403,6 +403,24 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  if (pathname.startsWith('/api/intervenciones/') && pathname.endsWith('/planificacion') && method === 'POST') {
+    const user = authenticateRequest(req);
+    if (!user) return sendJson(res, 401, { error: 'No autorizado' });
+
+    const id = pathname.split('/')[3];
+    const interv = db.prepare('SELECT user_id FROM intervenciones WHERE id = ?').get(id);
+    if (!interv) return sendJson(res, 404, { error: 'Intervención no encontrada' });
+    if (user.role === 'estudiante' && interv.user_id !== user.id) {
+      return sendJson(res, 403, { error: 'Acceso no permitido' });
+    }
+
+    const body = await parseBody(req);
+    db.prepare('UPDATE intervenciones SET planificacion = ?, actualizado_at = datetime("now") WHERE id = ?')
+      .run((body.planificacion || '').trim(), id);
+
+    return sendJson(res, 200, { ok: true, planificacion: (body.planificacion || '').trim() });
+  }
+
   if (pathname.startsWith('/api/intervenciones/') && method === 'DELETE') {
     const user = authenticateRequest(req);
     if (!user) return sendJson(res, 401, { error: 'No autorizado' });
@@ -489,10 +507,15 @@ const server = createServer(async (req, res) => {
     const writeStream = createWriteStream(tempFile);
     req.pipe(writeStream);
 
+    req.on('error', err => {
+      writeStream.destroy();
+      sendJson(res, 500, { error: `Error en la conexión al transferir documento: ${err.message}` });
+    });
+
     writeStream.on('finish', async () => {
       try {
         let text = '';
-        if (ext === '.docx') {
+        if (ext === '.docx' || ext === '.pdf' || ext === '.doc' || ext === '.odt') {
           text = await extractTextFromDocx(tempFile);
         } else {
           // Lectura directa de texto plano

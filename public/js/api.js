@@ -137,8 +137,18 @@ const API = {
       headers,
       body: file
     });
-    if (!res.ok) throw new Error('Error al procesar documento');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Error al procesar documento');
+    }
     return await res.json();
+  },
+
+  async updatePlanificacion(intervencionId, planificacion) {
+    return await this.request(`/api/intervenciones/${intervencionId}/planificacion`, {
+      method: 'POST',
+      body: { planificacion }
+    });
   },
 
   // Transcripción Automática de Audio
