@@ -1906,8 +1906,11 @@ const App = {
               </div>
             </div>
 
-            <div style="margin-top:12px; font-size:0.85rem; color:var(--muted);">
-              📄 <i>Documento oficial de referencia: <code>GUIA_PRESENTACION_REFLEXION_15MIN.md</code> disponible en los recursos de la asignatura.</i>
+            <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <a href="/docs/GUIA_PRESENTACION_REFLEXION_15MIN.pdf" target="_blank" class="btn min" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                📥 Descargar Guía Oficial en PDF
+              </a>
+              <span class="meta" style="font-size:0.83rem;">Documento completo con pauta, 4 momentos y rúbrica formativa</span>
             </div>
           </div>
 

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía Oficial - Presentación Oral de Reflexión Pedagógica (ED1360C)</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm 15mm 16mm 15mm;
+      @bottom-right {
+        content: counter(page) " / " counter(pages);
+        font-size: 8pt;
+        color: #64748b;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 9.5pt;
+      line-height: 1.45;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+    }
+
+    /* Header Institucional */
+    .inst-header {
+      border-bottom: 2.5px solid #C9252C;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .inst-title {
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      font-weight: 700;
+      margin: 0 0 3px 0;
+    }
+
+    .doc-main-title {
+      font-size: 15pt;
+      font-weight: 800;
+      color: #8E151A;
+      margin: 0 0 4px 0;
+      line-height: 1.2;
+    }
+
+    .doc-subtitle {
+      font-size: 9.5pt;
+      color: #334155;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .meta-tag {
+      background: #FDE8E9;
+      color: #C9252C;
+      border: 1px solid #fecaca;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 8pt;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    /* Cajas destacadas */
+    .callout-box {
+      background: #FEF2F2;
+      border-left: 4px solid #C9252C;
+      border-radius: 4px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      font-size: 9pt;
+      line-height: 1.45;
+    }
+
+    .callout-box.info {
+      background: #F0FDF4;
+      border-left-color: #059669;
+    }
+
+    .callout-box b {
+      color: #8E151A;
+    }
+
+    .callout-box.info b {
+      color: #065F46;
+    }
+
+    h2 {
+      font-size: 11pt;
+      font-weight: 800;
+      color: #8E151A;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 3px;
+      margin: 14px 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 10px 0 4px 0;
+    }
+
+    p {
+      margin: 0 0 8px 0;
+    }
+
+    ul, ol {
+      margin: 0 0 10px 0;
+      padding-left: 18px;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    /* Grilla de Momentos */
+    .moments-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .moment-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-top: 3px solid #C9252C;
+      border-radius: 5px;
+      padding: 8px;
+      font-size: 8pt;
+    }
+
+    .moment-card.m2 { border-top-color: #2563eb; }
+    .moment-card.m3 { border-top-color: #059669; }
+    .moment-card.m4 { border-top-color: #d97706; }
+
+    .moment-header {
+      font-weight: 800;
+      font-size: 8.5pt;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      color: #1e293b;
+    }
+
+    .moment-time {
+      background: #e2e8f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 7.5pt;
+    }
+
+    /* Tablas */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 8.5pt;
+      page-break-inside: avoid;
+    }
+
+    th {
+      background: #8E151A;
+      color: #ffffff;
+      font-weight: 700;
+      text-align: left;
+      padding: 6px 8px;
+      border: 1px solid #780e12;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    td {
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      vertical-align: top;
+      line-height: 1.35;
+    }
+
+    tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    /* Desglose de diapositivas */
+    .slide-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      background: #ffffff;
+      page-break-inside: avoid;
+    }
+
+    .slide-badge {
+      display: inline-block;
+      background: #8E151A;
+      color: #fff;
+      font-weight: 800;
+      font-size: 7.5pt;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-right: 6px;
+    }
+
+    .avoid-break {
+      page-break-inside: avoid;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 6px;
+      margin-top: 14px;
+      font-size: 7.5pt;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ENCABEZADO INSTITUCIONAL -->
+  <div class="inst-header">
+    <div>
+      <div class="inst-title">Universidad Católica de la Santísima Concepción · Facultad de Educación</div>
+      <h1 class="doc-main-title">Guía Oficial: Presentación Oral de Reflexión Pedagógica</h1>
+      <div class="doc-subtitle">Práctica Pedagógica III (ED1360C) · Pedagogía en Educación Media en Matemática</div>
+    </div>
+    <div class="meta-tag">
+      <div>⏱️ 15 MINUTOS MÁX.</div>
+      <div>CIAE BASAL · UCSC</div>
+    </div>
+  </div>
+
+  <!-- 1. SENTIDO Y PROPÓSITO -->
+  <p>
+    La presentación oral de reflexión pedagógica es la instancia de cierre y evaluación formativa del semestre. Su propósito central es que cada practicante exponga y justifique, ante sus formadores y pares, el <b>análisis crítico de su propia toma de decisiones en el aula</b>, fundamentado estrictamente en <b>evidencias observables</b> y en el trabajo previo realizado en la plataforma <b>Observa-Retro</b> (<code>https://observa-retro.onrender.com</code>).
+  </p>
+
+  <!-- 2. REQUISITO OBLIGATORIO PREVIO -->
+  <div class="callout-box">
+    <b>⚠️ REQUISITO PREVIO Y OBLIGATORIO (PLATAFORMA OBSERVA-RETRO):</b><br>
+    Para tener derecho a exponer, cada estudiante <b>debe haber completado y cerrado previamente su trabajo en la plataforma</b>. No se aceptarán relatos anecdóticos ni impresiones intuitivas. Cada practicante debe tener certificado en su <b>Historial y Portafolio</b>:
+    <ol style="margin: 4px 0 0 16px;">
+      <li>Planificación didáctica oficial cargada (Word <code>.docx</code> o texto con OA y momentos de clase).</li>
+      <li>Grabación de audio transcrita con marcas de tiempo <code>[mm:ss]</code> y turnos de aula.</li>
+      <li>Análisis pedagógico de los 19 criterios de la matriz de secuencias didácticas ejecutado.</li>
+      <li>Diálogo reflexivo de <b>8 pasos completado y borrador oficial aprobado</b> con el Chatbot.</li>
+    </ol>
+  </div>
+
+  <!-- 3. PARÁMETROS TÉCNICOS -->
+  <h2>1. Parámetros Técnicos y Gestión del Tiempo</h2>
+  <div class="moments-grid">
+    <div class="moment-card">
+      <div class="moment-header"><span>Momento 1</span><span class="moment-time">~2 min</span></div>
+      <b>Contexto Didáctico:</b> OA, tarea matemática, demanda cognitiva y errores anticipados.
+    </div>
+    <div class="moment-card m2">
+      <div class="moment-header"><span>Momento 2</span><span class="moment-time">~3-4 min</span></div>
+      <b>Episodio Crítico:</b> Cita del minuto <code>[mm:ss]</code> y transcripción objetiva de lo ocurrido.
+    </div>
+    <div class="moment-card m3">
+      <div class="moment-header"><span>Momento 3</span><span class="moment-time">~5 min</span></div>
+      <b>Análisis y Chatbot:</b> Interpretación matemática, hallazgos de la IA y matriz de 19 criterios.
+    </div>
+    <div class="moment-card m4">
+      <div class="moment-header"><span>Momento 4</span><span class="moment-time">~3-4 min</span></div>
+      <b>Alternativa y Metas:</b> Reingeniería didáctica y compromisos para la siguiente práctica.
+    </div>
+  </div>
+
+  <p style="font-size: 8.5pt; color: #475569;">
+    * <b>Tiempo total:</b> 10 a 12 minutos de exposición individual + 3 a 5 minutos de preguntas y retroalimentación del formador. Máximo estricto: <b>15 minutos</b>.<br>
+    * <b>Soporte visual:</b> Presentación en diapositivas (PowerPoint, Canva, PDF) con un máximo de <b>6 a 8 diapositivas</b>.
+  </p>
+
+  <!-- 4. ESTRUCTURA PASO A PASO POR DIAPOSITIVA -->
+  <h2>2. Estructura Didáctica de la Presentación (Paso a Paso)</h2>
+
+  <div class="slide-box">
+    <span class="slide-badge">Diapositiva 1</span><b>Portada e Identificación Institucional</b>
+    <div style="font-size: 8.5pt; margin-top: 2px;">
+      Nombre del practicante · Curso y nivel escolar (ej. <i>7° Básico</i>) · Centro educativo · Contenido matemático · Enlace/captura de certificación en Observa-Retro.
+    </div>
+  </div>
+
+  <div class="slide-box">
+    <span class="slide-badge">Diapositiva 2</span><b>Momento 1: Contexto y Propósito Didáctico (~2 minutos)</b>
+    <div style="font-size: 8.5pt; margin-top: 2px;">
+      • <b>Objetivo de Aprendizaje (OA)</b> y habilidades matemáticas centrales (<i>resolver problemas, representar, modelar, argumentar</i>).<br>
+      • <b>Demanda cognitiva prevista:</b> ¿Qué nivel de razonamiento demandaba la tarea planificada?<br>
+      • <b>Anticipación didáctica:</b> ¿Qué procedimientos esperabas y qué errores o bloqueos escolares habías previsto por escrito?
+    </div>
+  </div>
+
+  <div class="slide-box">
+    <span class="slide-badge">Diapositiva 3</span><b>Momento 2: Selección y Presentación del Episodio Crítico de Aula (~3 a 4 minutos)</b>
+    <div style="font-size: 8.5pt; margin-top: 2px;">
+      • <i>Definición:</i> Un episodio crítico no es un resumen de la clase completa; es un momento delimitado (2 a 5 min) donde ocurrió un quiebre pedagógico (un error conceptual colectivo, un bloqueo cognitivo o un desvío de la planificación).<br>
+      • <b>Cita temporal exacta:</b> Marca de tiempo del audio en Observa-Retro (ej: <code>[14:20 a 17:45]</code>).<br>
+      • <b>Hechos observables:</b> Proyectar el fragmento de la transcripción oficial: ¿Qué dijo o hizo el docente exactamente y cómo respondieron los escolares?<br>
+      • <b>Justificación de la elección:</b> ¿Por qué seleccionaste este episodio específico como foco de tu reflexión?
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- PÁGINA 2 -->
+  <div class="inst-header">
+    <div>
+      <div class="inst-title">Práctica Pedagógica III (ED1360C) · Universidad Católica de la Santísima Concepción</div>
+      <div class="doc-subtitle">Guía Oficial de Presentación Oral (Continuación)</div>
+    </div>
+    <div class="meta-tag">PÁGINA 2</div>
+  </div>
+
+  <div class="slide-box">
+    <span class="slide-badge">Diapositiva 4</span><b>Momento 3A: Interpretación del Razonamiento Matemático Escolar (~2.5 minutos)</b>
+    <div style="font-size: 8.5pt; margin-top: 2px;">
+      • <b>Análisis cognitivo:</b> ¿Por qué los estudiantes pensaron o procedieron de esa manera? (Fundamentar desde obstáculos didácticos, representaciones o concepciones previas).<br>
+      • <b>Análisis de la intervención docente:</b> ¿El practicante escuchó y reformuló activamente las ideas de los escolares o sustituyó su pensamiento entregando la respuesta directa?
+    </div>
+  </div>
+
+  <div class="slide-box">
+    <span class="slide-badge">Diapositiva 5</span><b>Momento 3B: Hallazgos Clave del Diálogo con el Chatbot y Criterios Didácticos (~2.5 minutos)</b>
+    <div style="font-size: 8.5pt; margin-top: 2px;">
+      • <b>Desafíos del Chatbot:</b> ¿Qué preguntas del tutor inteligente te permitieron visibilizar aspectos de tu práctica que no habías advertido durante la acción?<br>
+      • <b>Cruce con la Matriz de 19 Criterios:</b> Citar al menos un criterio didáctico analizado en la plataforma (ej. <i>Criterio 1.4 Gestión de errores anticipados</i>, <i>Criterio 2.3 Gestión de preguntas y debate</i>, o <i>Criterio 4.2 Coherencia entre lo planificado y lo implementado</i>).
+    </div>
+  </div>
+
+  <div class="slide-box">
+    <span class="slide-badge">Diapositiva 6</span><b>Momento 4A: Propuesta de Acción Didáctica Alternativa (~2 minutos)</b>
+    <div style="font-size: 8.5pt; margin-top: 2px;">
+      • <b>Reingeniería de la intervención:</b> Si volvieras a estar en ese minuto exacto de la clase frente a los escolares:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;- ¿Qué pregunta abierta, consigna de andamiaje o contraejemplo plantearías?<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;- ¿Qué representación didáctica (concreta, pictórica, gráfica o simbólica) incorporarías para facilitar la comprensión sin rebajar la demanda cognitiva?
+    </div>
+  </div>
+
+  <div class="slide-box">
+    <span class="slide-badge">Diapositiva 7</span><b>Momento 4B: Compromisos y Proyección para la Siguiente Práctica (~1.5 minutos)</b>
+    <div style="font-size: 8.5pt; margin-top: 2px;">
+      • Metas concretas, observables y verificables para tu próxima intervención en el establecimiento escolar.<br>
+      • Conclusión personal sobre cómo el análisis basado en evidencias observables transformó tu comprensión de la docencia en matemática.
+    </div>
+  </div>
+
+  <!-- 5. ERRORES A EVITAR -->
+  <h2>3. Errores Críticos que Deben Evitarse</h2>
+  <ul style="font-size: 8.5pt;">
+    <li><b>El relato cronológico superficial:</b> No gastes tiempo enumerando la clase paso a paso (<i>"primero saludé, luego pasé la lista..."</i>). Concéntrate exclusivamente en el <b>episodio crítico</b>.</li>
+    <li><b>Afirmaciones sin evidencia:</b> Evita juicios intuitivos o impresiones sin respaldo (<i>"los estudiantes no entendían nada"</i>, <i>"la clase fue muy buena"</i>). Toda afirmación debe sustentarse en citas de la transcripción y marcas de tiempo.</li>
+    <li><b>Atribución exclusiva al contexto:</b> El foco no debe estar en culpar al tiempo escolar, al timbre o a la conducta, sino en <b>tus decisiones didácticas</b> y en el razonamiento de los estudiantes.</li>
+    <li><b>Exceder los 15 minutos:</b> La capacidad de síntesis rigurosa es un estándar evaluado. Exceder el tiempo penaliza la calificación.</li>
+  </ul>
+
+  <!-- 6. RÚBRICA FORMATIVA DE EVALUACIÓN -->
+  <h2>4. Rúbrica de Evaluación de la Presentación Oral</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 20%;">Criterio Evaluado</th>
+        <th style="width: 30%;">Nivel 3 · Destacado</th>
+        <th style="width: 30%;">Nivel 2 · Competente (Nivel PPIII)</th>
+        <th style="width: 20%;">Nivel 1 · Inicial</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>1. Requisito en Observa-Retro</b></td>
+        <td>Ciclo completo de 8 pasos certificado en portafolio, planificación oficial adjunta y audio transcrito.</td>
+        <td>Ciclo completado en la plataforma con borrador de reflexión generado.</td>
+        <td>No trabajó previamente en la plataforma o trabajo incompleto (invalida la presentación).</td>
+      </tr>
+      <tr>
+        <td><b>2. Foco en Evidencias de Aula</b></td>
+        <td>Cita marcas temporales <code>[mm:ss]</code> exactas y turnos fidedignos de habla; distingue hechos observables de interpretaciones.</td>
+        <td>Menciona momentos de la clase con referencias generales a la grabación de aula.</td>
+        <td>Relato puramente anecdótico o descriptivo sin respaldo en transcripción ni audio.</td>
+      </tr>
+      <tr>
+        <td><b>3. Profundidad del Análisis Didáctico</b></td>
+        <td>Interpreta rigurosamente el pensamiento matemático del escolar y evalúa críticamente sus decisiones con base en la didáctica.</td>
+        <td>Describe las dificultades del estudiante pero con análisis didáctico parcial o intuitivo.</td>
+        <td>Justificaciones defensivas o atribución exclusiva de dificultades al estudiante o contexto.</td>
+      </tr>
+      <tr>
+        <td><b>4. Alternativa Didáctica Fundamentada</b></td>
+        <td>Diseña consignas o preguntas alternativas de andamiaje que preservan la demanda cognitiva y la autonomía escolar.</td>
+        <td>Plantea alternativas pertinentes aunque generales o con tendencia a la simplificación de la tarea.</td>
+        <td>No propone alternativas concretas o se limita a repetir la explicación original.</td>
+      </tr>
+      <tr>
+        <td><b>5. Gestión del Tiempo y Comunicación</b></td>
+        <td>Concluye su exposición de manera fluida en <b>máximo 15 minutos</b>, con lenguaje técnico-profesional apropiado.</td>
+        <td>Ajusta su presentación al tiempo límite (15 min) con pequeñas dificultades de síntesis.</td>
+        <td>Excede notoriamente los 15 minutos o no alcanza a exponer los momentos reflexivos.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <footer>
+    <span>Facultad de Educación · Universidad Católica de la Santísima Concepción (UCSC)</span>
+    <span>Práctica Pedagógica III (ED1360C) · Proyecto CIAE BASAL</span>
+  </footer>
+
+</body>
+</html>
