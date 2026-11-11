@@ -441,6 +441,11 @@ const server = createServer(async (req, res) => {
     const writeStream = createWriteStream(targetPath);
     req.pipe(writeStream);
 
+    req.on('error', err => {
+      writeStream.destroy();
+      sendJson(res, 500, { error: `Error en la conexión al transferir audio: ${err.message}` });
+    });
+
     writeStream.on('finish', () => {
       const stat = statSync(targetPath);
       const mime = req.headers['content-type'] || 'audio/mpeg';

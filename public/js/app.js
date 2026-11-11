@@ -470,8 +470,10 @@ const App = {
             </label>
 
             <label>Planificación de la clase (texto o archivo .docx / .txt)
+              <span>Opcional: Pega el texto o sube tu documento de planificación.</span>
               <textarea id="input-planificacion" class="form-control" placeholder="Pega el texto de tu planificación..."></textarea>
               <input type="file" id="input-plan-file" accept=".docx,.txt,.md" class="form-control" style="margin-top:6px;">
+              <span id="plan-file-status" class="meta" style="color:var(--board); font-weight:600;"></span>
             </label>
           </fieldset>
 
@@ -481,6 +483,8 @@ const App = {
               <span>Confirmo que cuento con las autorizaciones del establecimiento educacional para este registro y entiendo que su fin es exclusivamente formativo y diagnóstico.</span>
             </label>
           </div>
+
+          <div id="save-status-indicator" style="display:none; margin-top:14px; padding:12px 16px; border-radius:8px; font-weight:600; font-size:0.92rem;"></div>
 
           <div class="row" style="margin-top:16px;">
             <button type="submit" class="btn" id="btn-submit-nueva">Guardar e ingresar a la intervención</button>
@@ -1987,22 +1991,60 @@ const App = {
       });
     }
 
+    const inputPlanFile = document.getElementById('input-plan-file');
+    if (inputPlanFile) {
+      inputPlanFile.addEventListener('change', async () => {
+        if (!inputPlanFile.files[0]) return;
+        const file = inputPlanFile.files[0];
+        const statusEl = document.getElementById('plan-file-status');
+        const planTextEl = document.getElementById('input-planificacion');
+        if (statusEl) statusEl.textContent = 'Procesando archivo de planificación...';
+        try {
+          const data = await window.API.uploadDocumento(file);
+          if (planTextEl) planTextEl.value = data.text;
+          if (statusEl) statusEl.textContent = `✓ Planificación cargada: ${file.name}`;
+        } catch (e) {
+          if (statusEl) statusEl.textContent = `Error al leer archivo: ${e.message}`;
+        }
+      });
+    }
+
     const form = document.getElementById('form-nueva-intervencion');
     form.addEventListener('submit', async ev => {
       ev.preventDefault();
+
+      const btnSubmit = document.getElementById('btn-submit-nueva');
+      const statusInd = document.getElementById('save-status-indicator');
+      const setStatus = (msg, isError = false, isSuccess = false) => {
+        if (!statusInd) return;
+        statusInd.style.display = 'block';
+        statusInd.style.background = isError ? '#FEE2E2' : (isSuccess ? '#D1FAE5' : 'var(--board-soft)');
+        statusInd.style.color = isError ? '#991B1B' : (isSuccess ? '#065F46' : 'var(--board)');
+        statusInd.style.border = `1px solid ${isError ? '#EF4444' : (isSuccess ? '#10B981' : 'var(--board)')}`;
+        statusInd.innerHTML = msg;
+      };
+
       const text = document.getElementById('input-trans-text').value;
       const anon = document.getElementById('input-anon-names')?.value || '';
       const lines = this.parseTranscriptText(text, anon);
 
-      if (!lines.length) {
-        alert('Por favor agrega o pega la transcripción de la clase.');
+      // Si no hay texto de transcripción ni audio seleccionado
+      if (!lines.length && !audioFilePending && !selectedAudioPrueba) {
+        alert('Por favor agrega o pega la transcripción de la clase, o selecciona un archivo de audio (.mp3, .m4a, .wav).');
         return;
       }
+
+      // Bloquear botón para evitar clics múltiples
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '⏳ Guardando clase...';
+      }
+      setStatus('⏳ Guardando datos de la intervención en la plataforma...');
 
       const payload = {
         fecha: document.getElementById('input-fecha').value,
         curso: document.getElementById('input-curso').value,
-        contenido: document.getElementById('input-contenido').value,
+        contenido: document.getElementById('input-contenido').value || 'Clase de aula (sin título)',
         proposito: document.getElementById('input-proposito').value,
         contexto: document.getElementById('input-contexto').value,
         planificacion: document.getElementById('input-planificacion').value,
@@ -2010,17 +2052,48 @@ const App = {
         lineas: lines
       };
 
+      let newIntervId = null;
       try {
         const res = await window.API.createIntervencion(payload);
-        if (selectedAudioPrueba) {
-          await window.API.cargarAudioPrueba(selectedAudioPrueba, res.id);
-        } else if (audioFilePending) {
-          await window.API.uploadAudio(res.id, audioFilePending);
-        }
-        await this.cargarIntervenciones();
-        await this.abrirIntervencion(res.id);
+        newIntervId = res.id;
       } catch (e) {
-        alert(e.message);
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = 'Guardar e ingresar a la intervención';
+        }
+        setStatus(`❌ Error al crear la intervención: ${e.message}`, true);
+        alert(`Error al guardar: ${e.message}`);
+        return;
+      }
+
+      // Intervención creada con éxito; ahora vincular el audio si fue provisto
+      if (selectedAudioPrueba) {
+        try {
+          setStatus('⏳ Vinculando grabación de audio del proyecto...');
+          await window.API.cargarAudioPrueba(selectedAudioPrueba, newIntervId);
+        } catch (errAudio) {
+          console.warn('Error vinculando audio de prueba:', errAudio);
+        }
+      } else if (audioFilePending) {
+        try {
+          const mb = (audioFilePending.size / (1024 * 1024)).toFixed(1);
+          setStatus(`⏳ Subiendo grabación de audio (${mb} MB)... por favor espera un momento.`);
+          await window.API.uploadAudio(newIntervId, audioFilePending);
+        } catch (errAudio) {
+          console.warn('Error subiendo audio:', errAudio);
+          this.state.notice = `⚠️ Tu clase se guardó exitosamente, pero el archivo de audio no pudo completarse (${errAudio.message}). Puedes volver a adjuntarlo dentro de la clase cuando gustes.`;
+        }
+      }
+
+      setStatus('✓ ¡Clase guardada exitosamente! Ingresando al panel formativo...', false, true);
+
+      // Recargar intervenciones y abrir
+      try {
+        await this.cargarIntervenciones();
+        await this.abrirIntervencion(newIntervId);
+      } catch (e) {
+        this.state.view = 'dashboard';
+        this.render();
       }
     });
 
