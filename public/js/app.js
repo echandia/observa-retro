@@ -1861,18 +1861,54 @@ const App = {
             </div>
           </div>
 
-          <!-- Paso 6: Aprobación y Retroalimentación -->
+          <!-- Paso 6: Aprobación y Cierre de Reflexión -->
           <div class="comp-card" style="border-top:3px solid var(--board);">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
               <span style="background:var(--board); color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem;">6</span>
-              <h3 style="margin:0; font-size:1.15rem; color:var(--board);">Borrador Oficial y Retroalimentación del Formador</h3>
+              <h3 style="margin:0; font-size:1.15rem; color:var(--board);">Borrador Oficial y Certificación en Portafolio</h3>
             </div>
             <ol style="font-size:0.9rem; line-height:1.6; margin:0 0 8px 18px;">
               <li>Al completar las 8 preguntas, presiona <b>"Generar Borrador Oficial de Reflexión"</b>.</li>
               <li>Revisa la redacción de las 8 secciones consolidadas. Puedes editar cualquier párrafo para pulir tu argumentación pedagógica.</li>
-              <li>Haz clic en <b>"Aprobar Borrador Oficial"</b>. Tu reflexión quedará formalmente registrada para la revisión del equipo docente.</li>
-              <li><b>Revisión de tu Formador:</b> Tu profesor formador (Dr. Eugenio Chandía, Prof. Samuel Pereira o Dr. David Gómez) revisará tu reflexión, te dejará retroalimentación cualitativa y evaluará tu progresión reflexiva según la <i>Rúbrica de 5 Dimensiones</i> en la pestaña <b>"Avance en la Reflexión"</b>.</li>
+              <li>Haz clic en <b>"Aprobar Borrador Oficial"</b>. Tu reflexión quedará formalmente registrada en tu <b>Historial y Portafolio</b>.</li>
             </ol>
+          </div>
+
+          <!-- Paso 7: Presentación Oral de Reflexión Pedagógica (Máx. 15 Minutos) -->
+          <div class="comp-card" style="border-top:3px solid #059669; background:linear-gradient(135deg, #fff 0%, #f0fdf4 100%);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="background:#059669; color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem;">7</span>
+                <h3 style="margin:0; font-size:1.15rem; color:#059669;">Presentación Oral de Reflexión (Máximo 15 Minutos)</h3>
+              </div>
+              <span class="cat-pill cat-3" style="background:#dcfce7; border-color:#86efac; color:#15803d; font-weight:700;">
+                ⏱️ 15 min estrictos
+              </span>
+            </div>
+
+            <div style="background:#fff; border:1px solid #bbf7d0; border-radius:6px; padding:12px 14px; margin:10px 0; font-size:0.88rem; line-height:1.5;">
+              ⚠️ <b>Requisito Obligatorio:</b> Es estrictamente obligatorio haber completado previamente el trabajo en esta plataforma (planificación adjunta, audio transcrito y reflexión de 8 pasos aprobada). No se admitirán relatos anecdóticos sin respaldo en las evidencias observables de la plataforma.
+            </div>
+
+            <h4 style="margin:12px 0 6px; color:var(--board); font-size:0.98rem;">Estructura de la Exposición Oral (6 a 8 diapositivas):</h4>
+            <div style="display:grid; gap:8px; font-size:0.88rem; line-height:1.5;">
+              <div style="padding:8px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:6px;">
+                <b>1. Contexto y Propósito Didáctico (2 min):</b> Nivel escolar, Objetivo de Aprendizaje (OA), demanda cognitiva prevista y errores escolares anticipados en la planificación.
+              </div>
+              <div style="padding:8px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:6px;">
+                <b>2. El Episodio Crítico de Aula (3-4 min):</b> Citar minuto exacto del audio <code>[mm:ss]</code> y proyectar extracto de la transcripción fidedigna. ¿Qué dijiste/hiciste tú y cómo respondieron los escolares?
+              </div>
+              <div style="padding:8px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:6px;">
+                <b>3. Análisis Reflexivo y Hallazgos con la IA (5 min):</b> Interpretación del pensamiento matemático del estudiante, cruce con los 19 criterios didácticos y preguntas clave del chatbot que desafiaron tu mirada.
+              </div>
+              <div style="padding:8px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:6px;">
+                <b>4. Alternativas Didácticas y Metas Docentes (3-4 min):</b> Reingeniería didáctica: ¿Qué otra consigna, pregunta o representación plantearías en ese instante? Compromisos concretos para tu próxima clase.
+              </div>
+            </div>
+
+            <div style="margin-top:12px; font-size:0.85rem; color:var(--muted);">
+              📄 <i>Documento oficial de referencia: <code>GUIA_PRESENTACION_REFLEXION_15MIN.md</code> disponible en los recursos de la asignatura.</i>
+            </div>
           </div>
 
           <!-- Preguntas frecuentes -->
