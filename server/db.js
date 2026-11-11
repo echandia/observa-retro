@@ -379,7 +379,7 @@ const formadoresOficiales = [
     id: 'usr-tutor-echandia',
     email: 'echandia@ucsc.cl',
     name: 'Dr. Eugenio Chandía Muñoz',
-    role: 'tutor',
+    role: 'admin',
     institucion: 'UCSC',
     curso: 'ED1360C',
     seccion: 'Docente Responsable',
