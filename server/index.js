@@ -255,15 +255,29 @@ const server = createServer(async (req, res) => {
       rows = db.prepare('SELECT * FROM intervenciones WHERE user_id = ? ORDER BY fecha DESC, creado_at DESC').all(user.id);
     }
 
-    // Agregar estado de análisis y reflexión
+    // Agregar estado de análisis, planificación y reflexión con chatbot
     const result = rows.map(r => {
       const an = db.prepare('SELECT con_reflexion FROM analisis WHERE intervencion_id = ?').get(r.id);
-      const ref = db.prepare('SELECT aprobado FROM reflexiones WHERE intervencion_id = ?').get(r.id);
+      const ref = db.prepare('SELECT turnos_json, paso_actual, aprobado, actualizado_at FROM reflexiones WHERE intervencion_id = ?').get(r.id);
       const evRef = db.prepare('SELECT nivel_general FROM evaluaciones_reflexivas WHERE intervencion_id = ?').get(r.id);
+
+      let nTurnos = 0;
+      if (ref && ref.turnos_json) {
+        try { nTurnos = JSON.parse(ref.turnos_json).length; } catch (_) {}
+      }
+
+      const tienePlan = !!(r.planificacion && r.planificacion.trim());
+      const palabrasPlan = tienePlan ? r.planificacion.trim().split(/\s+/).filter(Boolean).length : 0;
+
       return {
         ...r,
         tieneAnalisis: !!an,
+        tienePlanificacion: tienePlan,
+        palabrasPlanificacion: palabrasPlan,
         reflexionAprobada: ref ? !!ref.aprobado : false,
+        nTurnosReflexion: nTurnos,
+        pasoReflexion: ref ? ref.paso_actual : 0,
+        ultimaInteraccionChat: ref ? ref.actualizado_at : null,
         evaluacionReflexiva: evRef ? evRef.nivel_general : null
       };
     });
@@ -415,7 +429,7 @@ const server = createServer(async (req, res) => {
     }
 
     const body = await parseBody(req);
-    db.prepare('UPDATE intervenciones SET planificacion = ?, actualizado_at = datetime("now") WHERE id = ?')
+    db.prepare("UPDATE intervenciones SET planificacion = ?, actualizado_at = datetime('now') WHERE id = ?")
       .run((body.planificacion || '').trim(), id);
 
     return sendJson(res, 200, { ok: true, planificacion: (body.planificacion || '').trim() });
@@ -587,7 +601,7 @@ const server = createServer(async (req, res) => {
             INSERT INTO transcripciones (intervencion_id, lineas_json) VALUES (?, ?)
             ON CONFLICT(intervencion_id) DO UPDATE SET lineas_json = excluded.lineas_json
           `).run(body.intervencionId, JSON.stringify(result.lineas));
-          db.prepare('UPDATE intervenciones SET n_lineas = ?, actualizado_at = datetime("now") WHERE id = ?').run(result.lineas.length, body.intervencionId);
+          db.prepare("UPDATE intervenciones SET n_lineas = ?, actualizado_at = datetime('now') WHERE id = ?").run(result.lineas.length, body.intervencionId);
         }
         return sendJson(res, 200, result);
       } catch (err) {
@@ -793,15 +807,17 @@ const server = createServer(async (req, res) => {
     let refRow = db.prepare('SELECT * FROM reflexiones WHERE intervencion_id = ?').get(id);
     let turnos = refRow ? JSON.parse(refRow.turnos_json || '[]') : [];
 
+    const nowIso = new Date().toISOString();
     if (mensajeUsuario) {
-      turnos.push({ r: 'u', c: mensajeUsuario });
+      turnos.push({ r: 'u', c: mensajeUsuario, ts: nowIso });
     }
 
     const respuestaBot = procesarTurnoReflexion(interv, mensajeUsuario, turnos);
     turnos.push({
       r: 'a',
       c: respuestaBot.mensaje,
-      paso: respuestaBot.paso
+      paso: respuestaBot.paso,
+      ts: new Date().toISOString()
     });
 
     db.prepare(`
@@ -997,6 +1013,121 @@ const server = createServer(async (req, res) => {
     }));
 
     return sendJson(res, 200, { trayectoria, rubrica: RUBRICA_REFLEXION });
+  }
+
+  // Historial y Portafolio Formativo Completo del Estudiante
+  if (pathname.startsWith('/api/estudiantes/') && pathname.endsWith('/historial') && method === 'GET') {
+    const user = authenticateRequest(req);
+    if (!user) return sendJson(res, 401, { error: 'No autorizado' });
+
+    let studentId = pathname.split('/')[3];
+    if (studentId === 'me' || (user.role === 'estudiante' && studentId !== user.id)) {
+      studentId = user.id;
+    }
+
+    const student = db.prepare('SELECT id, name, email, rut, curso, seccion, institucion FROM users WHERE id = ?').get(studentId);
+    if (!student) return sendJson(res, 404, { error: 'Estudiante no encontrado' });
+
+    const intervenciones = db.prepare(`
+      SELECT * FROM intervenciones WHERE user_id = ? ORDER BY fecha DESC, creado_at DESC
+    `).all(studentId);
+
+    let totalTurnosChatbot = 0;
+    let totalPlanificaciones = 0;
+    let totalLineasTranscripcion = 0;
+    let reflexionesAprobadas = 0;
+
+    const historialDetallado = intervenciones.map(i => {
+      const tienePlan = !!(i.planificacion && i.planificacion.trim());
+      if (tienePlan) totalPlanificaciones++;
+      totalLineasTranscripcion += (i.n_lineas || 0);
+
+      // Reflexión y diálogo con Chatbot
+      const refRow = db.prepare('SELECT * FROM reflexiones WHERE intervencion_id = ?').get(i.id);
+      let turnos = [];
+      let borrador = null;
+      let pasoActual = 1;
+      let aprobado = false;
+      let fechaAprob = null;
+
+      if (refRow) {
+        try { turnos = JSON.parse(refRow.turnos_json || '[]'); } catch (_) {}
+        try { borrador = JSON.parse(refRow.borrador_json || 'null'); } catch (_) {}
+        pasoActual = refRow.paso_actual || 1;
+        aprobado = !!refRow.aprobado;
+        fechaAprob = refRow.fecha_aprob;
+        if (aprobado) reflexionesAprobadas++;
+      }
+      totalTurnosChatbot += turnos.length;
+
+      // Análisis pedagógico
+      const anRow = db.prepare('SELECT sintesis, calidad, fecha FROM analisis WHERE intervencion_id = ?').get(i.id);
+
+      // Evaluación reflexiva
+      const evalRow = db.prepare('SELECT nivel_general, fortalezas, areas_mejora, metas_proxima_clase, fecha FROM evaluaciones_reflexivas WHERE intervencion_id = ?').get(i.id);
+
+      // Revisión de tutor
+      const revRow = db.prepare('SELECT retro_estudiante, retro_tutor, actualizado_at FROM revisiones WHERE intervencion_id = ?').get(i.id);
+
+      return {
+        id: i.id,
+        fecha: i.fecha,
+        curso: i.curso,
+        contenido: i.contenido,
+        proposito: i.proposito,
+        contexto: i.contexto,
+        tipo_registro: i.tipo_registro,
+        audio_filename: i.audio_filename,
+        audio_path: i.audio_path,
+        n_lineas: i.n_lineas,
+        planificacion: i.planificacion || '',
+        tienePlanificacion: tienePlan,
+        palabrasPlanificacion: tienePlan ? i.planificacion.trim().split(/\s+/).filter(Boolean).length : 0,
+        chatbot: {
+          nTurnos: turnos.length,
+          pasoActual,
+          aprobado,
+          fechaAprob,
+          turnos,
+          borrador,
+          ultimaInteraccion: refRow ? refRow.actualizado_at : null
+        },
+        analisis: anRow ? {
+          sintesis: anRow.sintesis,
+          calidad: anRow.calidad,
+          fecha: anRow.fecha
+        } : null,
+        evaluacion: evalRow ? {
+          nivelGeneral: evalRow.nivel_general,
+          fortalezas: evalRow.fortalezas,
+          areasMejora: evalRow.areas_mejora,
+          metas: evalRow.metas_proxima_clase,
+          fecha: evalRow.fecha
+        } : null,
+        revision: revRow ? {
+          retroEstudiante: revRow.retro_estudiante,
+          retroTutor: revRow.retro_tutor,
+          fecha: revRow.actualizado_at
+        } : null,
+        creado_at: i.creado_at,
+        actualizado_at: i.actualizado_at
+      };
+    });
+
+    const resumen = {
+      totalIntervenciones: intervenciones.length,
+      totalPlanificaciones,
+      totalTurnosChatbot,
+      totalLineasTranscripcion,
+      reflexionesAprobadas
+    };
+
+    return sendJson(res, 200, {
+      ok: true,
+      estudiante: student,
+      resumen,
+      historial: historialDetallado
+    });
   }
 
   // ============================================================

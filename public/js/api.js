@@ -265,6 +265,11 @@ const API = {
 
   async getTrayectoriaReflexiva(studentId) {
     return await this.request(`/api/estudiantes/${studentId}/trayectoria-reflexiva`);
+  },
+
+  // Historial y Portafolio Formativo
+  async getHistorialEstudiante(studentId = 'me') {
+    return await this.request(`/api/estudiantes/${studentId}/historial`);
   }
 };
 

@@ -445,6 +445,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .cat-pill.cat-1::before { background: var(--c1); border-color: var(--c2); }
 .cat-pill.cat-2::before { background: var(--c2); border-color: var(--c2); }
 .cat-pill.cat-3::before { background: var(--c3); border-color: var(--c3); }
+.cat-pill.cat-4::before { background: #3B82F6; border-color: #2563EB; }
 .cat-pill.cat-NE::before { border-style: dashed; }
 .cat-pill.rejected { text-decoration: line-through; opacity: 0.6; }
 

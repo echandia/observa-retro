@@ -9,7 +9,9 @@ const App = {
     selectedStudentId: null,
     intervenciones: [],
     currentInterv: null,
-    view: 'dashboard', // 'dashboard', 'nueva', 'intervencion', 'trayectoria', 'avance_reflexivo', 'marco'
+    historialData: null,
+    historialStudentId: null,
+    view: 'dashboard', // 'dashboard', 'nueva', 'intervencion', 'trayectoria', 'avance_reflexivo', 'historial', 'marco'
     tab: 'registro',   // 'registro', 'rubrica', 'reflexion', 'supervision', 'eval_reflexiva', 'reporte'
     loading: false,
     error: null,
@@ -83,6 +85,34 @@ const App = {
       }
     } catch (e) {
       this.state.error = e.message;
+    } finally {
+      this.state.loading = false;
+      this.render();
+      window.scrollTo(0, 0);
+    }
+  },
+
+  async abrirHistorial(studentId) {
+    const isTutor = this.state.user && (this.state.user.role === 'tutor' || this.state.user.role === 'admin');
+    let targetId = studentId;
+    if (!targetId) {
+      if (isTutor) {
+        targetId = (this.state.selectedStudentId && this.state.selectedStudentId !== 'all')
+          ? this.state.selectedStudentId
+          : (this.state.practicantes[0]?.id || 'me');
+      } else {
+        targetId = this.state.user.id;
+      }
+    }
+    this.state.historialStudentId = targetId;
+    this.state.view = 'historial';
+    this.state.loading = true;
+    this.render();
+    try {
+      const res = await window.API.getHistorialEstudiante(targetId);
+      this.state.historialData = res;
+    } catch (e) {
+      this.state.error = `Error al cargar historial: ${e.message}`;
     } finally {
       this.state.loading = false;
       this.render();
@@ -200,6 +230,9 @@ const App = {
 
         <div class="nav-section">
           <h4>Evaluación y Aprendizaje</h4>
+          <button class="nav-btn ${this.state.view === 'historial' ? 'active' : ''}" id="btn-nav-historial">
+            📁 Historial y Portafolio
+          </button>
           <button class="nav-btn ${this.state.view === 'trayectoria' ? 'active' : ''}" id="btn-nav-trayectoria">
             Trayectoria de competencias
           </button>
@@ -242,6 +275,7 @@ const App = {
             ${this.state.view === 'dashboard' ? 'Panel de Intervenciones Pedagógicas' :
               this.state.view === 'nueva' ? 'Cargar Nueva Intervención de Aula' :
               this.state.view === 'intervencion' && this.state.currentInterv ? this.escapeHtml(this.state.currentInterv.intervencion.contenido) :
+              this.state.view === 'historial' ? 'Historial y Portafolio Formativo del Practicante' :
               this.state.view === 'trayectoria' ? 'Trayectoria Longitudinal de Competencias' :
               this.state.view === 'avance_reflexivo' ? 'Evaluación del Avance en la Reflexión' :
               this.state.view === 'guia' ? 'Guía de Trabajo del Practicante (Paso a Paso)' :
@@ -259,6 +293,7 @@ const App = {
     if (this.state.view === 'dashboard') return this.renderDashboard();
     if (this.state.view === 'nueva') return this.renderNueva();
     if (this.state.view === 'intervencion') return this.renderIntervencion();
+    if (this.state.view === 'historial') return this.renderHistorial();
     if (this.state.view === 'trayectoria') return this.renderTrayectoria();
     if (this.state.view === 'avance_reflexivo') return this.renderAvanceReflexivo();
     if (this.state.view === 'marco') return this.renderMarco();
@@ -322,9 +357,10 @@ const App = {
                   <th>Fecha</th>
                   <th>Curso</th>
                   <th>Contenido / Tarea Matemática</th>
-                  <th>Tipo de Registro</th>
+                  <th>Planificación Didáctica</th>
+                  <th>Registro / Audio</th>
                   <th>Análisis</th>
-                  <th>Reflexión</th>
+                  <th>Chatbot Reflexivo</th>
                   <th>Evaluación Formador</th>
                   <th>Acción</th>
                 </tr>
@@ -337,12 +373,31 @@ const App = {
                     <td>${this.formatFecha(item.fecha)}</td>
                     <td>${this.escapeHtml(item.curso || '—')}</td>
                     <td><b>${this.escapeHtml(item.contenido)}</b></td>
-                    <td><span class="tag">${this.escapeHtml(item.tipo_registro)}</span></td>
+                    <td>
+                      ${item.tienePlanificacion ? `
+                        <span class="cat-pill cat-1" title="${item.palabrasPlanificacion} palabras">✓ Adjunta (${item.palabrasPlanificacion} pals)</span>
+                      ` : `
+                        <span class="meta" style="color:#d97706; font-weight:600;">⚠️ Pendiente</span>
+                      `}
+                    </td>
+                    <td>
+                      <span class="tag" style="display:inline-block; margin-bottom:2px;">${this.escapeHtml(item.tipo_registro)}</span>
+                      ${item.audio_filename ? `<br><small class="meta" title="${this.escapeHtml(item.audio_filename)}">🎵 ${this.escapeHtml(item.audio_filename.length > 18 ? item.audio_filename.slice(0, 15) + '...' : item.audio_filename)}</small>` : ''}
+                      ${item.n_lineas ? `<br><small class="meta">${item.n_lineas} turnos aula</small>` : ''}
+                    </td>
                     <td>${item.tieneAnalisis ? '<span class="cat-pill cat-2">Analizada</span>' : '<span class="meta">Pendiente</span>'}</td>
-                    <td>${item.reflexionAprobada ? '<span class="cat-pill cat-3">Aprobada</span>' : '<span class="meta">En proceso</span>'}</td>
+                    <td>
+                      ${item.reflexionAprobada ? `
+                        <span class="cat-pill cat-3" title="Reflexión aprobada y firmada">✓ Aprobada (${item.nTurnosReflexion || 0} turnos)</span>
+                      ` : (item.nTurnosReflexion > 0) ? `
+                        <span class="cat-pill cat-4" title="Diálogo en curso">💬 ${item.nTurnosReflexion} turnos · Paso ${item.pasoReflexion || 1}/8</span>
+                      ` : `
+                        <span class="meta">Sin iniciar</span>
+                      `}
+                    </td>
                     <td>${item.evaluacionReflexiva ? `<span class="user-role-tag tutor">${this.escapeHtml(item.evaluacionReflexiva)}</span>` : '<span class="meta">Sin evaluar</span>'}</td>
                     <td>
-                      <button class="btn min secondary" data-open-int="${item.id}">Abrir</button>
+                      <button class="btn min secondary" data-open-int="${item.id}" title="Abrir y editar clase">Abrir</button>
                     </td>
                   </tr>
                 `).join('')}
@@ -1152,6 +1207,295 @@ const App = {
     `;
   },
 
+  renderHistorial() {
+    if (this.state.loading && !this.state.historialData) {
+      return `
+        <div style="text-align:center; padding:48px 20px;">
+          <div style="font-size:2rem; margin-bottom:12px;">⏳</div>
+          <h3 style="color:var(--board);">Cargando Historial y Portafolio Formativo...</h3>
+          <p class="meta">Consolidando intervenciones de aula, planificaciones didácticas y diálogos con el chatbot.</p>
+        </div>
+      `;
+    }
+
+    const data = this.state.historialData;
+    if (!data || !data.estudiante) {
+      return `
+        <div class="alert warning">
+          No se encontró información del historial para el estudiante seleccionado. Haz clic en "Historial y Portafolio" o selecciona un practicante.
+        </div>
+      `;
+    }
+
+    const isTutor = this.state.user && (this.state.user.role === 'tutor' || this.state.user.role === 'admin');
+    const est = data.estudiante;
+    const res = data.resumen || {};
+    const items = data.historial || [];
+
+    const studentSelectHtml = (isTutor && this.state.practicantes && this.state.practicantes.length) ? `
+      <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:1.2rem;">👤</span>
+          <div>
+            <b style="color:var(--board); font-size:0.95rem;">Estudiante a supervisar:</b>
+            <div style="font-size:0.8rem; color:var(--muted);">Selecciona un practicante para auditar su historial completo</div>
+          </div>
+        </div>
+        <select id="select-historial-student" class="form-control" style="max-width:340px; font-weight:600; padding:6px 10px;">
+          ${this.state.practicantes.map(p => `
+            <option value="${p.id}" ${p.id === this.state.historialStudentId ? 'selected' : ''}>
+              ${this.escapeHtml(p.name)} [${p.seccion || 'Sec. 1'}]
+            </option>
+          `).join('')}
+        </select>
+      </div>
+    ` : '';
+
+    return `
+      <div style="max-width:1040px;">
+        ${studentSelectHtml}
+
+        <!-- Encabezado del Portafolio del Estudiante -->
+        <div style="background:linear-gradient(135deg, #fff 0%, #fdf2f2 100%); border:1.5px solid var(--board-soft); border-radius:10px; padding:20px; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px;">
+            <div>
+              <span class="tag" style="background:var(--board); color:#fff; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em;">Portafolio Formativo Oficial</span>
+              <h1 style="margin:8px 0 4px; color:var(--board); font-size:1.6rem;">${this.escapeHtml(est.name)}</h1>
+              <div style="display:flex; gap:14px; flex-wrap:wrap; font-size:0.88rem; color:var(--ink); margin-top:6px;">
+                <span>🆔 RUT: <b>${this.escapeHtml(est.rut || '—')}</b></span>
+                <span>📧 <b>${this.escapeHtml(est.email)}</b></span>
+                <span>🏫 Sección: <b>${this.escapeHtml(est.seccion || 'Sección 1')}</b></span>
+                <span>🎓 UCSC · ED1360C</span>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <span class="user-role-tag" style="font-size:0.82rem;">Práctica Pedagógica III</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjetas de Métricas Globales del Historial -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:24px;">
+          <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px 16px;">
+            <small class="meta" style="font-weight:600; text-transform:uppercase;">Intervenciones Totales</small>
+            <div style="font-size:1.8rem; font-weight:700; color:var(--board);">${res.totalIntervenciones || 0}</div>
+            <small class="meta">Clases registradas</small>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px 16px;">
+            <small class="meta" style="font-weight:600; text-transform:uppercase;">Planificaciones Didácticas</small>
+            <div style="font-size:1.8rem; font-weight:700; color:#059669;">${res.totalPlanificaciones || 0} / ${res.totalIntervenciones || 0}</div>
+            <small class="meta">${res.totalIntervenciones ? Math.round((res.totalPlanificaciones / res.totalIntervenciones) * 100) : 0}% de cobertura</small>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px 16px;">
+            <small class="meta" style="font-weight:600; text-transform:uppercase;">Diálogos con Chatbot</small>
+            <div style="font-size:1.8rem; font-weight:700; color:#2563eb;">${res.totalTurnosChatbot || 0}</div>
+            <small class="meta">Mensajes e interacciones</small>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px 16px;">
+            <small class="meta" style="font-weight:600; text-transform:uppercase;">Reflexiones Aprobadas</small>
+            <div style="font-size:1.8rem; font-weight:700; color:var(--board);">${res.reflexionesAprobadas || 0}</div>
+            <small class="meta">Ciclos completados</small>
+          </div>
+        </div>
+
+        <h3 style="margin:24px 0 14px; color:var(--board); display:flex; align-items:center; gap:8px;">
+          <span>📚</span> Historial Cronológico de Intervenciones y Reflexiones
+        </h3>
+
+        ${!items.length ? `
+          <div style="background:var(--surface); border:1px dashed var(--line); border-radius:8px; padding:36px 20px; text-align:center;">
+            <div style="font-size:2.2rem; margin-bottom:8px;">📂</div>
+            <h3 style="margin:0 0 6px; color:var(--board);">Sin intervenciones registradas en el historial</h3>
+            <p class="lead" style="font-size:0.92rem; max-width:540px; margin:0 auto 16px;">
+              Este practicante aún no tiene clases cargadas. Cuando se registre una intervención, aquí quedarán guardadas automáticamente su planificación didáctica, el registro de aula y todas las interacciones sostenidas con el chatbot reflexivo.
+            </p>
+          </div>
+        ` : `
+          <div style="display:grid; gap:20px;">
+            ${items.map((item, idx) => {
+              const turnos = item.chatbot?.turnos || [];
+              const borrador = item.chatbot?.borrador || null;
+              const tienePlan = item.tienePlanificacion;
+              const nLineas = item.n_lineas || 0;
+
+              return `
+                <div style="background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+                  <!-- Barra Superior de la Intervención -->
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:14px; border-bottom:1px solid var(--line); padding-bottom:12px;">
+                    <div>
+                      <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                        <span class="user-role-tag" style="background:var(--board-soft); color:var(--board); font-weight:700;">Intervención #${items.length - idx}</span>
+                        <h3 style="margin:0; font-size:1.15rem; color:var(--board);">${this.escapeHtml(item.contenido)}</h3>
+                      </div>
+                      <div style="font-size:0.85rem; color:var(--muted); display:flex; gap:12px; flex-wrap:wrap;">
+                        <span>📅 <b>${this.formatFecha(item.fecha)}</b></span>
+                        <span>🏫 Curso: <b>${this.escapeHtml(item.curso || 'Sin curso')}</b></span>
+                        <span>🎙️ Modalidad: <b>${this.escapeHtml(item.tipo_registro)}</b></span>
+                        ${item.audio_filename ? `<span>🎵 Audio: <b>${this.escapeHtml(item.audio_filename)}</b></span>` : ''}
+                      </div>
+                    </div>
+                    <div>
+                      <button class="btn min secondary" data-open-historial-int="${item.id}" title="Abrir y editar en el espacio de trabajo">
+                        🔍 Abrir clase completa
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Grid de Componentes Guardados: Planificación, Registro, Chatbot, Evaluación -->
+                  <div style="display:grid; gap:16px;">
+                    
+                    <!-- 1. Planificación Didáctica Oficial -->
+                    <div style="background:#fafafa; border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                          <span>📋</span>
+                          <b style="font-size:0.92rem; color:var(--board);">Planificación Didáctica Oficial</b>
+                        </div>
+                        <div>
+                          ${tienePlan ? `
+                            <span class="cat-pill cat-1" style="font-size:0.78rem;">✓ Guardada (${item.palabrasPlanificacion} palabras)</span>
+                          ` : `
+                            <span class="meta" style="color:#d97706; font-weight:600; font-size:0.8rem;">⚠️ Pendiente de adjuntar</span>
+                          `}
+                        </div>
+                      </div>
+                      ${tienePlan ? `
+                        <details style="margin-top:6px;">
+                          <summary style="font-size:0.84rem; cursor:pointer; color:var(--board); font-weight:600;">
+                            Ver texto completo de la planificación (${item.palabrasPlanificacion} palabras)
+                          </summary>
+                          <div style="margin-top:8px; font-size:0.88rem; line-height:1.5; color:var(--ink); background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:10px 12px; max-height:240px; overflow-y:auto; white-space:pre-wrap;">
+                            ${this.escapeHtml(item.planificacion)}
+                          </div>
+                        </details>
+                      ` : `
+                        <div style="font-size:0.84rem; color:var(--muted); font-style:italic;">
+                          Aún no se ha adjuntado el archivo de planificación (.docx, .pdf) para esta clase.
+                        </div>
+                      `}
+                    </div>
+
+                    <!-- 2. Registro de Aula y Evidencias Observadas -->
+                    <div style="background:#fafafa; border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                          <span>🎤</span>
+                          <b style="font-size:0.92rem; color:var(--board);">Registro de Aula y Análisis Pedagógico</b>
+                        </div>
+                        <div>
+                          ${nLineas > 0 ? `
+                            <span class="cat-pill cat-2" style="font-size:0.78rem;">${nLineas} turnos de habla analizados</span>
+                          ` : `
+                            <span class="meta" style="font-size:0.8rem;">Sin transcripción cargada</span>
+                          `}
+                        </div>
+                      </div>
+                      ${item.analisis ? `
+                        <div style="font-size:0.86rem; color:var(--ink); line-height:1.45; background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:10px 12px; margin-top:6px;">
+                          <div style="margin-bottom:4px;"><b>Síntesis del registro:</b> ${this.escapeHtml(item.analisis.sintesis || '—')}</div>
+                          ${item.analisis.calidad ? `<div><b>Calidad técnica observada:</b> ${this.escapeHtml(item.analisis.calidad)}</div>` : ''}
+                        </div>
+                      ` : `
+                        <div style="font-size:0.84rem; color:var(--muted); font-style:italic;">
+                          ${nLineas > 0 ? 'Registro de aula cargado. Análisis pedagógico pendiente.' : 'No se ha transcrito el audio ni cargado texto de clase para esta intervención.'}
+                        </div>
+                      `}
+                    </div>
+
+                    <!-- 3. Interacciones y Diálogo Guardado con el Chatbot Reflexivo -->
+                    <div style="background:#fafafa; border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                          <span>🤖</span>
+                          <b style="font-size:0.92rem; color:var(--board);">Diálogo con el Chatbot Reflexivo</b>
+                        </div>
+                        <div>
+                          ${item.chatbot?.aprobado ? `
+                            <span class="cat-pill cat-3" style="font-size:0.78rem; font-weight:700;">✓ Reflexión Final Aprobada y Certificada</span>
+                          ` : item.chatbot?.nTurnos > 0 ? `
+                            <span class="cat-pill cat-4" style="font-size:0.78rem;">💬 Diálogo en curso (${item.chatbot.nTurnos} turnos · Paso ${item.chatbot.pasoActual || 1}/8)</span>
+                          ` : `
+                            <span class="meta" style="font-size:0.8rem;">Sin diálogo iniciado</span>
+                          `}
+                        </div>
+                      </div>
+
+                      ${turnos.length > 0 ? `
+                        <details style="margin-top:6px;">
+                          <summary style="font-size:0.84rem; cursor:pointer; color:var(--board); font-weight:600; padding:6px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:6px;">
+                            💬 Ver historial completo de mensajes guardados (${turnos.length} interacciones)
+                          </summary>
+                          <div style="margin-top:10px; max-height:360px; overflow-y:auto; display:grid; gap:8px; padding:10px; background:#fff; border:1px solid #e2e8f0; border-radius:6px;">
+                            ${turnos.map(t => {
+                              const isUser = t.r === 'u' || t.r === 'user';
+                              return `
+                                <div class="chat-bubble ${isUser ? 'user' : 'assistant'}" style="margin:2px 0;">
+                                  <small style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span>${isUser ? '👤 Practicante' : `🤖 Tutor Inteligente · Paso ${t.paso || '—'}`}</span>
+                                    ${t.ts ? `<span style="font-size:0.74rem; opacity:0.8;">${this.formatDateTime(t.ts)}</span>` : ''}
+                                  </small>
+                                  <div style="font-size:0.88rem; line-height:1.45;">${this.escapeHtml(t.c)}</div>
+                                </div>
+                              `;
+                            }).join('')}
+                          </div>
+                        </details>
+                      ` : `
+                        <div style="font-size:0.84rem; color:var(--muted); font-style:italic;">
+                          El practicante aún no ha interactuado con el chatbot reflexivo en esta intervención.
+                        </div>
+                      `}
+
+                      <!-- Borrador de Reflexión Docente Estructurado -->
+                      ${borrador ? `
+                        <div style="margin-top:10px; background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:10px 12px;">
+                          <div style="font-weight:700; color:var(--board); font-size:0.88rem; margin-bottom:6px;">
+                            📄 Borrador Estructurado de la Reflexión Pedagógica:
+                          </div>
+                          <div style="display:grid; gap:8px;">
+                            ${(Array.isArray(borrador) ? borrador : Object.values(borrador)).map((secc, i) => `
+                              <div style="font-size:0.85rem; line-height:1.45; border-left:3px solid var(--board-soft); padding-left:8px;">
+                                <b>Paso ${i + 1}:</b> ${this.escapeHtml(typeof secc === 'string' ? secc : JSON.stringify(secc))}
+                              </div>
+                            `).join('')}
+                          </div>
+                        </div>
+                      ` : ''}
+                    </div>
+
+                    <!-- 4. Evaluación y Acompañamiento del Formador -->
+                    ${item.evaluacion || (item.revision && (item.revision.retroTutor || item.revision.retroEstudiante)) ? `
+                      <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px 14px;">
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                          <span>🎓</span>
+                          <b style="font-size:0.92rem; color:var(--board);">Evaluación del Formador / Tutor Académico</b>
+                        </div>
+                        ${item.evaluacion ? `
+                          <div style="font-size:0.86rem; color:var(--ink); line-height:1.45;">
+                            <div><b>Nivel reflexivo dictaminado:</b> <span class="user-role-tag tutor">${this.escapeHtml(item.evaluacion.nivelGeneral || 'Nivel 2')}</span></div>
+                            ${item.evaluacion.fortalezas ? `<div style="margin-top:4px;"><b>Fortalezas destacadas:</b> ${this.escapeHtml(item.evaluacion.fortalezas)}</div>` : ''}
+                            ${item.evaluacion.areasMejora ? `<div style="margin-top:4px;"><b>Áreas de desarrollo docente:</b> ${this.escapeHtml(item.evaluacion.areasMejora)}</div>` : ''}
+                            ${item.evaluacion.metas ? `<div style="margin-top:4px;"><b>Metas para la próxima práctica:</b> ${this.escapeHtml(item.evaluacion.metas)}</div>` : ''}
+                          </div>
+                        ` : ''}
+                        ${item.revision?.retroTutor ? `
+                          <div style="margin-top:6px; font-size:0.86rem; color:var(--ink);">
+                            <b>Observación formativa del formador:</b> ${this.escapeHtml(item.revision.retroTutor)}
+                          </div>
+                        ` : ''}
+                      </div>
+                    ` : ''}
+
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </div>
+    `;
+  },
+
   async renderTrayectoria() {
     const list = this.state.intervenciones;
     return `
@@ -1477,9 +1821,14 @@ const App = {
                     <td><span class="user-role-tag ${p.seccion && p.seccion.includes('2') ? 'tutor' : ''}">${this.escapeHtml(p.seccion || 'Sec. 1')}</span></td>
                     <td style="font-size:0.84rem; color:var(--muted);">RUT o <code>practica2026</code></td>
                     <td style="text-align:right;">
-                      <button class="btn secondary min btn-supervisar-estudiante" data-id="${p.id}" data-name="${this.escapeHtml(p.name)}">
-                        Supervisar clases
-                      </button>
+                      <div style="display:flex; gap:6px; justify-content:flex-end;">
+                        <button class="btn min btn-ver-historial-estudiante" data-id="${p.id}" data-name="${this.escapeHtml(p.name)}" title="Ver portafolio e historial de ${this.escapeHtml(p.name)}">
+                          📁 Portafolio
+                        </button>
+                        <button class="btn secondary min btn-supervisar-estudiante" data-id="${p.id}" data-name="${this.escapeHtml(p.name)}" title="Filtrar intervenciones de ${this.escapeHtml(p.name)}">
+                          Supervisar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 `).join('')}
@@ -1534,6 +1883,22 @@ const App = {
     const btnDash = document.getElementById('btn-nav-dashboard');
     if (btnDash) btnDash.addEventListener('click', () => { this.state.view = 'dashboard'; this.render(); });
 
+    const btnHistorial = document.getElementById('btn-nav-historial');
+    if (btnHistorial) btnHistorial.addEventListener('click', () => { this.abrirHistorial(); });
+
+    const selHistStudent = document.getElementById('select-historial-student');
+    if (selHistStudent) {
+      selHistStudent.addEventListener('change', () => {
+        this.abrirHistorial(selHistStudent.value);
+      });
+    }
+
+    document.querySelectorAll('[data-open-historial-int]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.abrirIntervencion(btn.dataset.openHistorialInt);
+      });
+    });
+
     const btnTray = document.getElementById('btn-nav-trayectoria');
     if (btnTray) btnTray.addEventListener('click', () => { this.state.view = 'trayectoria'; this.render(); });
 
@@ -1574,6 +1939,13 @@ const App = {
         this.state.view = 'dashboard';
         await this.cargarIntervenciones();
         this.render();
+      });
+    });
+
+    // Botones de ver historial/portafolio de un estudiante desde la nómina
+    document.querySelectorAll('.btn-ver-historial-estudiante').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.abrirHistorial(btn.dataset.id);
       });
     });
 
@@ -1636,7 +2008,11 @@ const App = {
       selStudent.addEventListener('change', async () => {
         this.state.selectedStudentId = selStudent.value;
         await this.cargarIntervenciones();
-        this.render();
+        if (this.state.view === 'historial') {
+          await this.abrirHistorial(selStudent.value !== 'all' ? selStudent.value : null);
+        } else {
+          this.render();
+        }
       });
     }
 
@@ -2609,6 +2985,17 @@ const App = {
     if (!d) return 'Sin fecha';
     const [y, m, day] = d.slice(0, 10).split('-');
     return `${day}/${m}/${y}`;
+  },
+
+  formatDateTime(d) {
+    if (!d) return '';
+    try {
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return d;
+      return dt.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch (_) {
+      return d;
+    }
   },
 
   escapeHtml(str) {
