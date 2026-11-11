@@ -408,12 +408,26 @@ const App = {
               <textarea id="input-trans-text" class="form-control" style="min-height:120px;" placeholder="[00:01:35] Estudiante 1: 750.&#10;[00:01:38] Practicante: ¿Cómo lo obtuviste?"></textarea>
             </label>
 
-            <div class="row">
+            <div class="row" style="align-items:center; gap:10px; margin-top:4px;">
               <button type="button" class="btn secondary min" id="btn-parse-text">Procesar texto pegado</button>
               ${isTutor ? `
               <button type="button" class="btn secondary min" id="btn-cargar-ejemplo-1">Cargar Ejemplo 1 (Raíz Enésima .docx)</button>
               ` : ''}
-              <span id="trans-parse-count" class="meta"></span>
+              <span id="trans-parse-count" class="meta" style="font-weight:600;"></span>
+            </div>
+
+            <!-- Vista Previa Interactiva de la Transcripción Procesada -->
+            <div id="trans-preview-container" style="display:none; margin-top:12px; background:var(--surface); border:1.5px solid var(--board-soft, #e2e8f0); border-radius:8px; padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--line); padding-bottom:8px;">
+                <b style="color:var(--board); font-size:0.92rem; display:flex; align-items:center; gap:6px;">
+                  📋 Vista Previa de Turnos Procesados (<span id="preview-total-count">0</span> turnos)
+                </b>
+                <button type="button" class="btn min secondary" id="btn-toggle-preview" style="padding:2px 10px; font-size:0.78rem;">
+                  Ocultar vista previa
+                </button>
+              </div>
+              <div id="trans-preview-alert" style="display:none; padding:8px 12px; margin-bottom:8px; border-radius:6px; font-size:0.85rem;"></div>
+              <div id="trans-preview-list" class="transcript-box" style="max-height:280px; overflow-y:auto; position:static; border:1px solid var(--line); padding:6px 10px; background:#fff;"></div>
             </div>
 
             <label>Nombres que deben anonimizarse (separados por comas)
@@ -1943,6 +1957,17 @@ const App = {
       });
     }
 
+    const btnTogglePreview = document.getElementById('btn-toggle-preview');
+    if (btnTogglePreview) {
+      btnTogglePreview.addEventListener('click', () => {
+        const list = document.getElementById('trans-preview-list');
+        if (!list) return;
+        const isHidden = list.style.display === 'none';
+        list.style.display = isHidden ? 'block' : 'none';
+        btnTogglePreview.textContent = isHidden ? 'Ocultar vista previa' : 'Mostrar vista previa';
+      });
+    }
+
     const btnEjemplo1 = document.getElementById('btn-cargar-ejemplo-1');
     if (btnEjemplo1) {
       btnEjemplo1.addEventListener('click', async () => {
@@ -1966,7 +1991,8 @@ const App = {
     form.addEventListener('submit', async ev => {
       ev.preventDefault();
       const text = document.getElementById('input-trans-text').value;
-      const lines = this.parseTranscriptText(text);
+      const anon = document.getElementById('input-anon-names')?.value || '';
+      const lines = this.parseTranscriptText(text, anon);
 
       if (!lines.length) {
         alert('Por favor agrega o pega la transcripción de la clase.');
@@ -2003,26 +2029,147 @@ const App = {
   },
 
   procesarTextoTranscripcion(text) {
-    const lines = this.parseTranscriptText(text);
+    const previewContainer = document.getElementById('trans-preview-container');
+    const previewList = document.getElementById('trans-preview-list');
+    const previewCount = document.getElementById('preview-total-count');
+    const previewAlert = document.getElementById('trans-preview-alert');
     const countEl = document.getElementById('trans-parse-count');
-    if (countEl) countEl.textContent = `${lines.length} turnos detectados`;
+    const anonNames = document.getElementById('input-anon-names')?.value || '';
+
+    if (!text || !text.trim()) {
+      if (countEl) {
+        countEl.innerHTML = '<span style="color:#D97706; font-weight:600;">⚠️ Texto vacío</span>';
+      }
+      if (previewContainer && previewAlert) {
+        previewContainer.style.display = 'block';
+        previewAlert.style.display = 'block';
+        previewAlert.style.background = '#FEF3C7';
+        previewAlert.style.color = '#92400E';
+        previewAlert.style.border = '1px solid #F59E0B';
+        previewAlert.innerHTML = '⚠️ <b>El recuadro de transcripción está vacío.</b> Por favor ingresa o pega el texto antes de procesar.';
+        if (previewList) {
+          previewList.innerHTML = '<div style="color:var(--muted); font-size:0.85rem; padding:12px; text-align:center;">Pega el texto de la clase en el recuadro superior y pulsa <b>Procesar texto pegado</b>.</div>';
+        }
+        if (previewCount) previewCount.textContent = '0';
+      }
+      const textarea = document.getElementById('input-trans-text');
+      if (textarea) textarea.focus();
+      return [];
+    }
+
+    const lines = this.parseTranscriptText(text, anonNames);
+
+    if (countEl) {
+      if (lines.length > 0) {
+        countEl.innerHTML = `<span style="color:#059669; font-weight:700;">✓ ${lines.length} turnos procesados y listos</span>`;
+      } else {
+        countEl.innerHTML = `<span style="color:#DC2626; font-weight:600;">⚠️ 0 turnos reconocidos</span>`;
+      }
+    }
+
+    if (previewContainer && previewList) {
+      previewContainer.style.display = 'block';
+      if (previewCount) previewCount.textContent = lines.length;
+
+      if (lines.length === 0) {
+        if (previewAlert) {
+          previewAlert.style.display = 'block';
+          previewAlert.style.background = '#FEE2E2';
+          previewAlert.style.color = '#991B1B';
+          previewAlert.style.border = '1px solid #EF4444';
+          previewAlert.innerHTML = '⚠️ No se pudieron reconocer turnos de habla. Revisa que el texto contenga intervenciones o párrafos de la clase.';
+        }
+        previewList.innerHTML = '';
+      } else {
+        if (previewAlert) previewAlert.style.display = 'none';
+
+        previewList.innerHTML = lines.map((l, idx) => {
+          const num = idx + 1;
+          const isPract = /practicante|profesor|docente|profe/i.test(l.h || '');
+          const speakerColor = isPract ? 'var(--board, #8E151A)' : '#334155';
+          const speakerBg = isPract ? 'color-mix(in srgb, var(--board) 12%, transparent)' : '#f1f5f9';
+          const speakerLabel = l.h || (idx % 2 === 0 ? 'Practicante' : 'Estudiante');
+          const timeBadge = (l.t != null)
+            ? (window.AudioPlayer ? window.AudioPlayer.formatSeconds(l.t) : `${l.t}s`)
+            : `#${num}`;
+
+          return `
+            <div class="trans-line" style="padding:6px 8px; border-bottom:1px solid #f1f5f9; display:grid; grid-template-columns:55px 120px 1fr; gap:8px; align-items:start;">
+              <span class="btn-time" style="font-size:0.78rem; color:var(--muted); font-weight:600; text-align:left;">${timeBadge}</span>
+              <span style="font-size:0.78rem; font-weight:700; color:${speakerColor}; background:${speakerBg}; padding:2px 8px; border-radius:4px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center;">
+                ${this.escapeHtml(speakerLabel)}
+              </span>
+              <span class="text" style="font-size:0.88rem; line-height:1.45; color:var(--ink);">
+                ${this.escapeHtml(l.x)}
+              </span>
+            </div>
+          `;
+        }).join('');
+
+        try {
+          previewContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch (_) {}
+      }
+    }
+
     return lines;
   },
 
-  parseTranscriptText(text) {
-    if (!text) return [];
-    const lines = [];
-    const rawLines = text.split('\n');
+  parseTranscriptText(text, anonNames) {
+    if (!text || !text.trim()) return [];
 
-    rawLines.forEach(l => {
-      const line = l.trim();
-      if (!line) return;
+    let cleanText = text;
+    const anon = (typeof anonNames === 'string' && anonNames.trim())
+      ? anonNames
+      : (typeof document !== 'undefined' ? (document.getElementById('input-anon-names')?.value || '') : '');
+
+    if (anon) {
+      const names = anon.split(/[,;\n]+/).map(n => n.trim()).filter(Boolean);
+      let estCounter = 1;
+      names.forEach(name => {
+        const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const reg = new RegExp(`\\b${escaped}\\b`, 'gi');
+        cleanText = cleanText.replace(reg, `Estudiante ${estCounter++}`);
+      });
+    }
+
+    const lines = [];
+    const rawLines = cleanText.split(/\r?\n/);
+
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i].trim();
+      if (!line) continue;
+
+      // Omitir encabezados comunes de subtítulos
+      if (/^WEBVTT/i.test(line) || /^\d+$/.test(line)) continue;
+
+      // Formato Subtítulos SRT/WebVTT: 00:00:01.000 --> 00:00:04.000
+      const mArrow = line.match(/^(\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?)\s*-->/);
+      if (mArrow) {
+        const t = this.parseSeconds(mArrow[1]);
+        let nextText = '';
+        let speaker = '';
+        if (i + 1 < rawLines.length) {
+          i++;
+          const nextLine = rawLines[i].trim();
+          const mSpk = nextLine.match(/^([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ ._-]{1,30}):\s*(.*)$/);
+          if (mSpk) {
+            speaker = mSpk[1].trim();
+            nextText = mSpk[2].trim();
+          } else {
+            nextText = nextLine;
+          }
+        }
+        lines.push({ t, h: speaker || (lines.length % 2 === 0 ? 'Practicante' : 'Estudiante'), x: nextText });
+        continue;
+      }
+
       let t = null;
       let h = '';
       let x = line;
 
-      // Detectar timestamp tipo [00:12:30] o (01:45)
-      const mTime = line.match(/^[\[(]?(\d{1,2}:\d{2}(?::\d{2})?)[\])]?\s*[-–:]?\s*(.*)$/);
+      // Detectar timestamp tipo [00:12:30] o (01:45) o 00:12:30
+      const mTime = line.match(/^[\[(]?(\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?)[\])]?\s*[-–:]?\s*(.*)$/);
       if (mTime) {
         t = this.parseSeconds(mTime[1]);
         x = mTime[2].trim();
@@ -2035,17 +2182,23 @@ const App = {
         x = mSpeaker[2].trim();
       }
 
+      // Si sólo había hablante en una línea y el texto en la siguiente (Teams/Zoom)
+      if (h && !x && i + 1 < rawLines.length) {
+        i++;
+        x = rawLines[i].trim();
+      }
+
       lines.push({ t, h, x });
-    });
+    }
 
     // Si el texto vino sin saltos de línea (como dictado continuo), dividir por oraciones
-    if (lines.length <= 1 && text.length > 200) {
-      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    if (lines.length <= 1 && cleanText.length > 150) {
+      const sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
       return sentences.map((s, i) => ({
         t: i * 8, // marcas estimadas cada 8 segundos
         h: i % 3 === 0 ? "Practicante" : "Estudiante",
         x: s.trim()
-      }));
+      })).filter(it => it.x.length > 0);
     }
 
     return lines;
@@ -2053,9 +2206,12 @@ const App = {
 
   parseSeconds(timeStr) {
     if (!timeStr) return null;
-    const parts = timeStr.split(':').map(Number);
+    const clean = String(timeStr).replace(',', '.').trim();
+    const parts = clean.split(':').map(Number);
     if (parts.some(isNaN)) return null;
-    return parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
+    return parts.length === 3
+      ? Math.round(parts[0] * 3600 + parts[1] * 60 + parts[2])
+      : Math.round(parts[0] * 60 + parts[1]);
   },
 
   bindChatEvents() {
