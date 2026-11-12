@@ -128,6 +128,8 @@ CREATE TABLE IF NOT EXISTS configuraciones (
   clave TEXT PRIMARY KEY,
   valor TEXT NOT NULL
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_eval_ref_interv ON evaluaciones_reflexivas(intervencion_id);
 `);
 
 function hash(pwd, salt) {

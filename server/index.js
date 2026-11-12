@@ -962,30 +962,46 @@ const server = createServer(async (req, res) => {
     const evalId = 'ev-ref-' + randomUUID();
     const today = new Date().toISOString().slice(0, 10);
 
-    db.prepare(`
-      INSERT INTO evaluaciones_reflexivas (
-        id, intervencion_id, user_id, tutor_id, nivel_general, dimensiones_json, fortalezas, areas_mejora, metas_proxima_clase, fecha
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(intervencion_id) DO UPDATE SET
-        tutor_id = excluded.tutor_id,
-        nivel_general = excluded.nivel_general,
-        dimensiones_json = excluded.dimensiones_json,
-        fortalezas = excluded.fortalezas,
-        areas_mejora = excluded.areas_mejora,
-        metas_proxima_clase = excluded.metas_proxima_clase,
-        fecha = excluded.fecha
-    `).run(
-      evalId,
-      id,
-      interv.user_id,
-      user.id,
-      nivelGeneral,
-      JSON.stringify(body.dimensiones || {}),
-      body.fortalezas || '',
-      body.areasMejora || '',
-      body.metasProximaClase || '',
-      today
-    );
+    const existingEval = db.prepare('SELECT id FROM evaluaciones_reflexivas WHERE intervencion_id = ?').get(id);
+    if (existingEval) {
+      db.prepare(`
+        UPDATE evaluaciones_reflexivas SET
+          tutor_id = ?,
+          nivel_general = ?,
+          dimensiones_json = ?,
+          fortalezas = ?,
+          areas_mejora = ?,
+          metas_proxima_clase = ?,
+          fecha = ?
+        WHERE id = ?
+      `).run(
+        user.id,
+        nivelGeneral,
+        JSON.stringify(body.dimensiones || {}),
+        body.fortalezas || '',
+        body.areasMejora || '',
+        body.metasProximaClase || '',
+        today,
+        existingEval.id
+      );
+    } else {
+      db.prepare(`
+        INSERT INTO evaluaciones_reflexivas (
+          id, intervencion_id, user_id, tutor_id, nivel_general, dimensiones_json, fortalezas, areas_mejora, metas_proxima_clase, fecha
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        evalId,
+        id,
+        interv.user_id,
+        user.id,
+        nivelGeneral,
+        JSON.stringify(body.dimensiones || {}),
+        body.fortalezas || '',
+        body.areasMejora || '',
+        body.metasProximaClase || '',
+        today
+      );
+    }
 
     return sendJson(res, 200, { ok: true, nivelGeneral, resumen });
   }

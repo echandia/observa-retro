@@ -4,6 +4,8 @@ node_modules/
 *.db-shm
 *.db-wal
 scratch/
+__pycache__/
+*.pyc
 Audios de prueba/*.m4a
 !Audios de prueba/README.md
 uploads/audios/trans-*
