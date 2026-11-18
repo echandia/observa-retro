@@ -18,5 +18,8 @@
     "node": ">=22.5.0"
   },
   "author": "CIAE BASAL / UCSC",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@libsql/client": "^0.18.0"
+  }
 }

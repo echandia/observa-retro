@@ -21,6 +21,7 @@ import {
 import { RUBRICA_REFLEXION, calcularResumenReflexion } from './reflectionEval.js';
 import { getTranscriptionConfig, saveTranscriptionConfig, transcribirAudio } from './transcriptionService.js';
 import { importarListaCurso, sincronizarListasDeCursos } from './courseImporter.js';
+import { initCloudSync, pushCloudQuery, isCloudEnabled } from './cloudSync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -230,6 +231,16 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // Estado de sincronización en la nube (Turso)
+  if (pathname === '/api/cloud-sync/status' && method === 'GET') {
+    return sendJson(res, 200, {
+      ok: true,
+      cloudEnabled: isCloudEnabled(),
+      provider: isCloudEnabled() ? 'Turso SQLite Cloud' : 'SQLite Local (efímero en Render sin Turso)',
+      instructions: !isCloudEnabled() ? 'Agrega TURSO_DATABASE_URL y TURSO_AUTH_TOKEN en el panel de Render para persistencia permanente externa.' : 'Persistencia externa activa y asegurada.'
+    });
+  }
+
   // ============================================================
   // API: Intervenciones (CRUD)
   // ============================================================
@@ -413,6 +424,19 @@ const server = createServer(async (req, res) => {
       const lineas = Array.isArray(data.lineas) ? data.lineas : [];
       db.prepare('INSERT INTO transcripciones (intervencion_id, lineas_json) VALUES (?, ?)').run(id, JSON.stringify(lineas));
 
+      // Sincronizar de inmediato a Turso si está configurado
+      pushCloudQuery(`
+        INSERT OR REPLACE INTO intervenciones (
+          id, user_id, fecha, curso, contenido, proposito, contexto, planificacion, tipo_registro,
+          audio_path, audio_filename, audio_mimetype, n_lineas, creado_at, actualizado_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        id, user.id, data.fecha || now.slice(0, 10), (data.curso || '').trim(), (data.contenido || 'Intervención sin título').trim(),
+        (data.proposito || '').trim(), (data.contexto || '').trim(), (data.planificacion || '').trim(), data.tipoRegistro || 'Solo audio transcrito',
+        data.audioPath || null, data.audioFilename || null, data.audioMimeType || 'audio/mpeg', nLineas, now, now
+      ]);
+      pushCloudQuery('INSERT OR REPLACE INTO transcripciones (intervencion_id, lineas_json) VALUES (?, ?)', [id, JSON.stringify(lineas)]);
+
       return sendJson(res, 201, { id, ok: true });
     } catch (e) {
       return sendJson(res, 500, { error: e.message });
@@ -431,10 +455,13 @@ const server = createServer(async (req, res) => {
     }
 
     const body = await parseBody(req);
+    const planText = (body.planificacion || '').trim();
     db.prepare("UPDATE intervenciones SET planificacion = ?, actualizado_at = datetime('now') WHERE id = ?")
-      .run((body.planificacion || '').trim(), id);
+      .run(planText, id);
 
-    return sendJson(res, 200, { ok: true, planificacion: (body.planificacion || '').trim() });
+    pushCloudQuery("UPDATE intervenciones SET planificacion = ?, actualizado_at = datetime('now') WHERE id = ?", [planText, id]);
+
+    return sendJson(res, 200, { ok: true, planificacion: planText });
   }
 
   if (pathname.startsWith('/api/intervenciones/') && method === 'DELETE') {
@@ -450,6 +477,10 @@ const server = createServer(async (req, res) => {
     }
 
     db.prepare('DELETE FROM intervenciones WHERE id = ?').run(id);
+    pushCloudQuery('DELETE FROM intervenciones WHERE id = ?', [id]);
+    pushCloudQuery('DELETE FROM transcripciones WHERE intervencion_id = ?', [id]);
+    pushCloudQuery('DELETE FROM reflexiones WHERE intervencion_id = ?', [id]);
+    pushCloudQuery('DELETE FROM analisis WHERE intervencion_id = ?', [id]);
     return sendJson(res, 200, { ok: true });
   }
 
@@ -489,6 +520,12 @@ const server = createServer(async (req, res) => {
         SET audio_path = ?, audio_filename = ?, audio_mimetype = ?, audio_size = ?, actualizado_at = datetime('now')
         WHERE id = ?
       `).run(savedFilename, rawFilename, mime, stat.size, id);
+
+      pushCloudQuery(`
+        UPDATE intervenciones
+        SET audio_path = ?, audio_filename = ?, audio_mimetype = ?, audio_size = ?, actualizado_at = datetime('now')
+        WHERE id = ?
+      `, [savedFilename, rawFilename, mime, stat.size, id]);
 
       sendJson(res, 200, { ok: true, filename: rawFilename, size: stat.size });
     });
@@ -700,6 +737,12 @@ const server = createServer(async (req, res) => {
           SET audio_path = ?, audio_filename = ?, audio_mimetype = 'audio/mp4', audio_size = ?, actualizado_at = datetime('now')
           WHERE id = ?
         `).run(savedFilename, filename, stat.size, body.intervencionId);
+
+        pushCloudQuery(`
+          UPDATE intervenciones
+          SET audio_path = ?, audio_filename = ?, audio_mimetype = 'audio/mp4', audio_size = ?, actualizado_at = datetime('now')
+          WHERE id = ?
+        `, [savedFilename, filename, stat.size, body.intervencionId]);
       }
 
       return sendJson(res, 200, {
@@ -775,6 +818,12 @@ const server = createServer(async (req, res) => {
       JSON.stringify(rubrica)
     );
 
+    pushCloudQuery(`
+      INSERT OR REPLACE INTO analisis (
+        intervencion_id, fecha, con_reflexion, calidad, sintesis, episodios_json, evidencias_json, competencias_json, creado_at
+      ) VALUES (?, datetime('now'), ?, 'Registro de aula con transcripción y marcas temporales.', ?, ?, ?, ?, datetime('now'))
+    `, [id, conReflexion ? 1 : 0, sintesis, JSON.stringify(episodiosEp(episodios)), JSON.stringify(evidencias), JSON.stringify(competencias)]);
+
     return sendJson(res, 200, {
       ok: true,
       analisis: {
@@ -832,6 +881,11 @@ const server = createServer(async (req, res) => {
         actualizado_at = datetime('now')
     `).run(id, JSON.stringify(turnos), respuestaBot.paso);
 
+    pushCloudQuery(`
+      INSERT OR REPLACE INTO reflexiones (intervencion_id, turnos_json, paso_actual, creado_at, actualizado_at)
+      VALUES (?, ?, ?, datetime('now'), datetime('now'))
+    `, [id, JSON.stringify(turnos), respuestaBot.paso]);
+
     return sendJson(res, 200, {
       ok: true,
       turno: {
@@ -863,6 +917,12 @@ const server = createServer(async (req, res) => {
       WHERE intervencion_id = ?
     `).run(JSON.stringify(borrador), id);
 
+    pushCloudQuery(`
+      UPDATE reflexiones
+      SET borrador_json = ?, actualizado_at = datetime('now')
+      WHERE intervencion_id = ?
+    `, [JSON.stringify(borrador), id]);
+
     return sendJson(res, 200, { ok: true, borrador });
   }
 
@@ -880,6 +940,12 @@ const server = createServer(async (req, res) => {
       SET borrador_json = ?, aprobado = 1, fecha_aprob = ?, actualizado_at = datetime('now')
       WHERE intervencion_id = ?
     `).run(JSON.stringify(borrador), today, id);
+
+    pushCloudQuery(`
+      UPDATE reflexiones
+      SET borrador_json = ?, aprobado = 1, fecha_aprob = ?, actualizado_at = datetime('now')
+      WHERE intervencion_id = ?
+    `, [JSON.stringify(borrador), today, id]);
 
     return sendJson(res, 200, { ok: true, fechaAprob: today });
   }
@@ -1002,6 +1068,12 @@ const server = createServer(async (req, res) => {
         today
       );
     }
+
+    pushCloudQuery(`
+      INSERT OR REPLACE INTO evaluaciones_reflexivas (
+        id, intervencion_id, user_id, tutor_id, nivel_general, dimensiones_json, fortalezas, areas_mejora, metas_proxima_clase, fecha
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [existingEval ? existingEval.id : evalId, id, interv.user_id, user.id, nivelGeneral, JSON.stringify(body.dimensiones || {}), body.fortalezas || '', body.areasMejora || '', body.metasProximaClase || '', today]);
 
     return sendJson(res, 200, { ok: true, nivelGeneral, resumen });
   }
@@ -1180,6 +1252,11 @@ server.listen(PORT, async () => {
   console.log(` Servidor activo en http://localhost:${PORT}`);
   console.log(` Base de datos persistente SQLite: observa_retro.db`);
   console.log(`=======================================================`);
+  try {
+    await initCloudSync(db);
+  } catch (err) {
+    console.warn(`[CloudSync] Aviso en sincronización de inicio:`, err.message);
+  }
   try {
     const syncRes = await sincronizarListasDeCursos();
     console.log(`[Cursos] Sincronización automática: ${syncRes.length} nómina(s) procesada(s).`);
