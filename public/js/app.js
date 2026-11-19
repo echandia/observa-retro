@@ -50,6 +50,11 @@ const App = {
         if (!this.state.selectedStudentId) {
           this.state.selectedStudentId = 'all';
         }
+        fetch('/api/cloud-sync/status').then(r => r.json()).then(cs => {
+          this.state.cloudStatus = cs;
+          const banner = document.getElementById('cloud-status-banner');
+          if (banner && cs && !cs.cloudEnabled) banner.style.display = 'block';
+        }).catch(() => {});
       } catch (e) {}
     } else {
       this.state.selectedStudentId = this.state.user.id;
@@ -309,6 +314,18 @@ const App = {
     const isTutor = this.state.user && (this.state.user.role === 'tutor' || this.state.user.role === 'admin');
     return `
       <div>
+        ${isTutor && this.state.cloudStatus && !this.state.cloudStatus.cloudEnabled ? `
+          <div id="cloud-status-banner" style="background:#FEF2F2; border:1.5px solid #EF4444; border-radius:8px; padding:12px 16px; margin:0 0 16px; color:#991B1B;">
+            <div style="font-weight:700; margin-bottom:4px; font-size:0.95rem;">⚠️ Alerta de Persistencia: Base de datos en la nube desconectada</div>
+            <p style="margin:0 0 6px; font-size:0.88rem; line-height:1.4;">
+              ${this.escapeHtml(this.state.cloudStatus.warning || this.state.cloudStatus.error || 'La base de datos Turso no está enlazada.')}
+            </p>
+            <small style="font-size:0.82rem; color:#7F1D1D;">
+              Los datos que se guarden en este estado residen en almacenamiento temporal de Render y se borrarán al suspenderse el servidor. Para solucionarlo, actualiza la variable <code>TURSO_DATABASE_URL</code> en Render con tu URL real de Turso.
+            </small>
+          </div>
+        ` : ''}
+
         <p class="lead">
           Plataforma de registro y análisis de clases para el desarrollo progresivo de competencias y la reflexión profesional basada en evidencias observables de aula.
         </p>

@@ -21,7 +21,7 @@ import {
 import { RUBRICA_REFLEXION, calcularResumenReflexion } from './reflectionEval.js';
 import { getTranscriptionConfig, saveTranscriptionConfig, transcribirAudio } from './transcriptionService.js';
 import { importarListaCurso, sincronizarListasDeCursos } from './courseImporter.js';
-import { initCloudSync, pushCloudQuery, isCloudEnabled, getCloudClient } from './cloudSync.js';
+import { initCloudSync, pushCloudQuery, isCloudEnabled, getCloudClient, getCloudStatus } from './cloudSync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -233,11 +233,15 @@ const server = createServer(async (req, res) => {
 
   // Estado de sincronización en la nube (Turso)
   if (pathname === '/api/cloud-sync/status' && method === 'GET') {
+    const status = getCloudStatus();
     return sendJson(res, 200, {
       ok: true,
-      cloudEnabled: isCloudEnabled(),
-      provider: isCloudEnabled() ? 'Turso SQLite Cloud' : 'SQLite Local (efímero en Render sin Turso)',
-      instructions: !isCloudEnabled() ? 'Agrega TURSO_DATABASE_URL y TURSO_AUTH_TOKEN en el panel de Render para persistencia permanente externa.' : 'Persistencia externa activa y asegurada.'
+      cloudEnabled: status.connected,
+      configured: status.configured,
+      error: status.error,
+      url: status.url,
+      provider: status.connected ? 'Turso SQLite Cloud' : 'SQLite Local (efímero en Render sin Turso)',
+      warning: (status.url || '').includes('tucuenta') ? 'La variable TURSO_DATABASE_URL contiene el texto de ejemplo "tucuenta". Debes reemplazarla en Render por tu subdominio real de Turso.' : null
     });
   }
 

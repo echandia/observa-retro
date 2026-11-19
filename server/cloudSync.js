@@ -1,7 +1,12 @@
 import { createClient } from '@libsql/client';
 
 let cloudClient = null;
-let isConfigured = false;
+let cloudStatus = {
+  configured: false,
+  connected: false,
+  error: null,
+  url: null
+};
 
 /**
  * Inicializa la conexión con Turso si las variables de entorno están presentes
@@ -12,7 +17,19 @@ export function getCloudClient() {
   const url = process.env.TURSO_DATABASE_URL;
   const authToken = process.env.TURSO_AUTH_TOKEN;
 
+  cloudStatus.url = url || null;
+  cloudStatus.configured = !!(url && authToken);
+
   if (!url || !authToken) {
+    cloudStatus.connected = false;
+    cloudStatus.error = 'Variables TURSO_DATABASE_URL o TURSO_AUTH_TOKEN no definidas';
+    return null;
+  }
+
+  if (url.includes('tucuenta')) {
+    cloudStatus.connected = false;
+    cloudStatus.error = 'La URL contiene el texto de ejemplo "tucuenta". Debes reemplazarla por la URL real de tu base de datos de Turso.';
+    console.error('[CloudSync] ⚠️ ERROR DE CONFIGURACIÓN:', cloudStatus.error);
     return null;
   }
 
@@ -21,16 +38,21 @@ export function getCloudClient() {
       url: url.startsWith('http') || url.startsWith('libsql') ? url : `https://${url}`,
       authToken
     });
-    isConfigured = true;
     return cloudClient;
   } catch (err) {
+    cloudStatus.connected = false;
+    cloudStatus.error = err.message;
     console.error('[CloudSync] Error inicializando cliente Turso:', err.message);
     return null;
   }
 }
 
 export function isCloudEnabled() {
-  return !!getCloudClient();
+  return cloudStatus.connected;
+}
+
+export function getCloudStatus() {
+  return cloudStatus;
 }
 
 /**
@@ -160,7 +182,10 @@ export async function initCloudSync(localDb) {
 
   console.log('[CloudSync] Conectando con base de datos en la nube (Turso)...');
   try {
+    await client.execute('SELECT 1');
     await ensureCloudSchema(client);
+    cloudStatus.connected = true;
+    cloudStatus.error = null;
 
     // 1. Sincronizar usuarios
     const cloudUsers = await client.execute('SELECT * FROM users');
@@ -309,6 +334,8 @@ export async function initCloudSync(localDb) {
 
     console.log(`[CloudSync] ✓ Sincronización exitosa con Turso: ${cloudInts.rows.length} en nube, ${allLocalInts.length} en local.`);
   } catch (err) {
+    cloudStatus.connected = false;
+    cloudStatus.error = err.message;
     console.error('[CloudSync] Error durante sincronización con Turso:', err);
   }
 }
