@@ -243,8 +243,10 @@ const server = createServer(async (req, res) => {
 
   // Diagnóstico directo de Turso Cloud
   if (pathname === '/api/cloud-sync/debug' && method === 'GET') {
+    const rawUrl = process.env.TURSO_DATABASE_URL || 'NOT_SET';
+    const hasToken = !!process.env.TURSO_AUTH_TOKEN;
     const client = getCloudClient();
-    if (!client) return sendJson(res, 200, { ok: false, error: 'No cloud client configurado' });
+    if (!client) return sendJson(res, 200, { ok: false, error: 'No cloud client configurado', rawUrl, hasToken });
     try {
       const allTables = await client.execute("SELECT name FROM sqlite_master WHERE type='table'");
       const ints = await client.execute('SELECT id, user_id, fecha, curso, contenido, audio_filename, n_lineas, creado_at, actualizado_at FROM intervenciones');
@@ -252,13 +254,15 @@ const server = createServer(async (req, res) => {
       const users = await client.execute('SELECT id, email, name, role FROM users');
       return sendJson(res, 200, {
         ok: true,
+        rawUrl,
+        hasToken,
         tursoTables: allTables.rows.map(t => t.name),
         tursoIntervenciones: ints.rows,
         tursoEvaluaciones: evals.rows,
         tursoUsersCount: users.rows.length
       });
     } catch (e) {
-      return sendJson(res, 500, { ok: false, error: e.message });
+      return sendJson(res, 200, { ok: false, error: e.message, rawUrl, hasToken, stack: e.stack });
     }
   }
 
