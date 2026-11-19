@@ -1217,14 +1217,14 @@ const App = {
     const pasoActual = ref.paso || 1;
 
     const pasosNombres = [
-      "1. Reconstrucción",
-      "2. Descripción",
-      "3. Interpretación",
-      "4. Fundamentación",
-      "5. Contraste",
-      "6. Relación curricular",
-      "7. Alternativa didáctica",
-      "8. Proyección de mejora"
+      "1. Reconstrucción (DIM1: Foco)",
+      "2. Descripción (DIM2: Registro)",
+      "3. Interpretación (DIM3: Razonamiento)",
+      "4. Fundamentación (DIM2: Evidencias)",
+      "5. Contraste (DIM4: Mirada Crítica)",
+      "6. Relación curricular (CE5 / CE3)",
+      "7. Alternativa didáctica (DIM4 / DIM5)",
+      "8. Proyección de mejora (DIM5: Metas)"
     ];
 
     return `
@@ -1239,7 +1239,7 @@ const App = {
             }).join('')}
           </ol>
           <div style="margin-top:16px; font-size:0.84rem; color:var(--muted); line-height:1.4;">
-            El chatbot formula preguntas adaptativas ancladas en tu registro de aula. Responde con tus propias palabras y cita las marcas de tiempo.
+            El chatbot formula preguntas adaptativas ancladas en tu registro de aula y las 5 dimensiones de la rúbrica formativa. Responde con tus propias palabras y cita las marcas de tiempo.
           </div>
         </div>
 
@@ -1254,14 +1254,18 @@ const App = {
             ` : turnos.map(t => `
               <div class="chat-bubble ${t.r === 'u' ? 'user' : 'assistant'}">
                 <small>${t.r === 'u' ? 'Tú (Practicante)' : `Chatbot Reflexivo · Paso ${t.paso || 1}`}</small>
-                <div>${this.escapeHtml(t.c)}</div>
+                <div>${this.formatChatText(t.c)}</div>
               </div>
             `).join('')}
           </div>
 
           ${turnos.length ? `
             <div class="chat-input-area">
-              <div class="chat-suggestions" id="chat-suggestions-box"></div>
+              <div class="chat-suggestions" id="chat-suggestions-box">
+                ${(ref.sugerencias && ref.sugerencias.length) ? ref.sugerencias.map(s => `
+                  <button class="suggestion-chip" type="button" data-suggestion="${this.escapeHtml(s)}">💡 ${this.escapeHtml(s)}</button>
+                `).join('') : ''}
+              </div>
               <div class="row">
                 <button class="btn secondary min" id="btn-citar-minuto-audio">
                   🎙️ Citar minuto actual del audio (${window.AudioPlayer.getCurrentTimeFormatted()})
@@ -1285,7 +1289,7 @@ const App = {
 
               <div style="display:grid; gap:12px; margin-top:14px;">
                 ${ref.borrador.map((txt, i) => `
-                  <label style="font-weight:600; font-size:0.88rem;">${i + 1}. ${pasosNombres[i]}
+                  <label style="font-weight:600; font-size:0.88rem;">${pasosNombres[i] || `Paso ${i + 1}`}
                     <textarea class="form-control" data-borrador-idx="${i}" style="min-height:70px; margin-top:4px;">${this.escapeHtml(txt)}</textarea>
                   </label>
                 `).join('')}
@@ -1325,7 +1329,7 @@ const App = {
                   <small>${t.r === 'u' ? 'Respuesta del Practicante' : `Pregunta del Asistente (Paso ${t.paso || 1})`}</small>
                   <small class="meta">Turno #${idx + 1}</small>
                 </div>
-                <div>${this.escapeHtml(t.c)}</div>
+                <div>${this.formatChatText(t.c)}</div>
               </div>
             `).join('')}
           </div>
@@ -1365,7 +1369,7 @@ const App = {
           <h3 style="margin-top:20px;">3. Reflexión Aprobada del Practicante</h3>
           ${ref && ref.borrador && ref.aprobado ? `
             <div style="display:grid; gap:8px;">
-              ${ref.borrador.map((txt, i) => `<p><b>Paso ${i + 1}:</b> ${this.escapeHtml(txt)}</p>`).join('')}
+              ${ref.borrador.map((txt, i) => `<p><b>${['1. Reconstrucción (DIM1: Foco)', '2. Descripción (DIM2: Registro)', '3. Interpretación (DIM3: Razonamiento)', '4. Fundamentación (DIM2: Evidencias)', '5. Contraste (DIM4: Mirada Crítica)', '6. Relación curricular (CE5 / CE3)', '7. Alternativa didáctica (DIM4 / DIM5)', '8. Proyección de mejora (DIM5: Metas)'][i] || `Paso ${i + 1}`}:</b> ${this.escapeHtml(txt)}</p>`).join('')}
             </div>
           ` : '<p class="meta">El practicante aún no ha aprobado su reflexión.</p>'}
 
@@ -1607,7 +1611,7 @@ const App = {
                                     <span>${isUser ? '👤 Practicante' : `🤖 Tutor Inteligente · Paso ${t.paso || '—'}`}</span>
                                     ${t.ts ? `<span style="font-size:0.74rem; opacity:0.8;">${this.formatDateTime(t.ts)}</span>` : ''}
                                   </small>
-                                  <div style="font-size:0.88rem; line-height:1.45;">${this.escapeHtml(t.c)}</div>
+                                  <div style="font-size:0.88rem; line-height:1.45;">${this.formatChatText(t.c)}</div>
                                 </div>
                               `;
                             }).join('')}
@@ -1628,7 +1632,7 @@ const App = {
                           <div style="display:grid; gap:8px;">
                             ${(Array.isArray(borrador) ? borrador : Object.values(borrador)).map((secc, i) => `
                               <div style="font-size:0.85rem; line-height:1.45; border-left:3px solid var(--board-soft); padding-left:8px;">
-                                <b>Paso ${i + 1}:</b> ${this.escapeHtml(typeof secc === 'string' ? secc : JSON.stringify(secc))}
+                                <b>${['1. Reconstrucción (DIM1: Foco)', '2. Descripción (DIM2: Registro)', '3. Interpretación (DIM3: Razonamiento)', '4. Fundamentación (DIM2: Evidencias)', '5. Contraste (DIM4: Mirada Crítica)', '6. Relación curricular (CE5/CE3)', '7. Alternativa didáctica (DIM4/DIM5)', '8. Proyección de mejora (DIM5: Metas)'][i] || `Paso ${i + 1}`}:</b> ${this.escapeHtml(typeof secc === 'string' ? secc : JSON.stringify(secc))}
                               </div>
                             `).join('')}
                           </div>
@@ -3031,6 +3035,17 @@ const App = {
       });
     }
 
+    // Chips de sugerencias contextuales
+    document.querySelectorAll('.suggestion-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sug = btn.getAttribute('data-suggestion');
+        if (sug && input) {
+          input.value = (input.value ? input.value + ' ' : '') + sug;
+          input.focus();
+        }
+      });
+    });
+
     // Generar y Aprobar Borrador
     const btnGenBorrador = document.getElementById('btn-generar-borrador-reflexion');
     if (btnGenBorrador) {
@@ -3214,6 +3229,14 @@ const App = {
     return String(str ?? '').replace(/[&<>"']/g, c => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
+  },
+
+  formatChatText(str) {
+    if (!str) return '';
+    const escaped = this.escapeHtml(str);
+    return escaped
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>');
   }
 };
 

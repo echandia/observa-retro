@@ -364,12 +364,15 @@ const server = createServer(async (req, res) => {
     const reflexionRow = db.prepare('SELECT * FROM reflexiones WHERE intervencion_id = ?').get(id);
     let reflexion = null;
     if (reflexionRow) {
+      const turnosRef = JSON.parse(reflexionRow.turnos_json || '[]');
+      const botRes = procesarTurnoReflexion(interv, null, turnosRef);
       reflexion = {
-        turnos: JSON.parse(reflexionRow.turnos_json || '[]'),
+        turnos: turnosRef,
         paso: reflexionRow.paso_actual,
         borrador: JSON.parse(reflexionRow.borrador_json || 'null'),
         aprobado: !!reflexionRow.aprobado,
-        fechaAprob: reflexionRow.fecha_aprob
+        fechaAprob: reflexionRow.fecha_aprob,
+        sugerencias: botRes.sugerencias || []
       };
     }
 

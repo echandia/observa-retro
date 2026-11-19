@@ -161,14 +161,14 @@ export const RUBRICA_SECUENCIAS = [
 ];
 
 export const SECUENCIA_REFLEXION = [
-  { paso: 1, nombre: "Reconstrucción", foco: "Propósito matemático, contexto de la tarea y selección del episodio relevante a analizar." },
-  { paso: 2, nombre: "Descripción", foco: "Qué dijo o hizo el practicante y cómo respondieron los estudiantes en ese episodio concreto." },
-  { paso: 3, nombre: "Interpretación", foco: "Qué revela ese episodio sobre el pensamiento o razonamiento matemático de los escolares." },
-  { paso: 4, nombre: "Fundamentación", foco: "Qué evidencias observables, citas textuales y marcas de tiempo sustentan la interpretación formulada." },
-  { paso: 5, nombre: "Contraste", foco: "Qué evidencias discrepantes o límites obligan a matizar la apreciación sobre el logro del aprendizaje." },
-  { paso: 6, nombre: "Relación curricular", foco: "Con qué competencia (CE5, CE3, etc.) e indicador se vincula y justificación del nivel alcanzado." },
-  { paso: 7, nombre: "Alternativa didáctica", foco: "Qué otra decisión o mediación pedagógica era posible en ese momento y por qué." },
-  { paso: 8, nombre: "Proyección de mejora", foco: "Qué acción observable y concreta se implementará y qué evidencia se buscará en la próxima clase." }
+  { paso: 1, nombre: "Reconstrucción (DIM1: Foco)", foco: "Propósito matemático, contexto de la tarea y selección del episodio relevante a analizar." },
+  { paso: 2, nombre: "Descripción (DIM2: Registro)", foco: "Qué dijo o hizo el practicante y cómo respondieron los estudiantes en ese episodio concreto." },
+  { paso: 3, nombre: "Interpretación (DIM3: Razonamiento)", foco: "Qué revela ese episodio sobre el pensamiento o razonamiento matemático de los escolares." },
+  { paso: 4, nombre: "Fundamentación (DIM2: Evidencias)", foco: "Qué evidencias observables, citas textuales y marcas de tiempo sustentan la interpretación formulada." },
+  { paso: 5, nombre: "Contraste (DIM4: Mirada Crítica)", foco: "Qué evidencias discrepantes o límites obligan a matizar la apreciación sobre el logro del aprendizaje." },
+  { paso: 6, nombre: "Relación curricular (CE5 / CE3)", foco: "Con qué competencia (CE5, CE3, etc.) e indicador se vincula y justificación del nivel alcanzado." },
+  { paso: 7, nombre: "Alternativa didáctica (DIM4 / DIM5)", foco: "Qué otra decisión o mediación pedagógica era posible en ese momento y por qué." },
+  { paso: 8, nombre: "Proyección de mejora (DIM5: Metas)", foco: "Qué acción observable y concreta se implementará y qué evidencia se buscará en la próxima clase." }
 ];
 
 export const SUGERENCIAS_POR_PASO = {
@@ -458,66 +458,300 @@ export function valorarRubricaSecuencias(lineas, episodios, evidencias, tienePla
 }
 
 /**
- * Genera la respuesta conversacional del chatbot para la reflexión guiada (8 pasos)
+ * Extrae pistas pedagógicas, temporales y conceptuales del mensaje del estudiante
+ */
+function extraerPistasPedagogicas(texto) {
+  if (!texto) return { minuto: null, cita: null, competencia: null, terminos: [], tieneJuicio: false };
+  
+  // Marcas de tiempo: "minuto 25:10", "25:10", "[00:25:10]", "min 8"
+  const matchMin = texto.match(/(?:minuto|min|\[)?\s*(\d{1,2}:\d{2}|\b\d{1,2}\s*minutos?)/i);
+  
+  // Citas textuales entre comillas simples, dobles o angulares
+  const matchCita = texto.match(/["'«´]([^"'»´]{3,})["'»´]/);
+
+  // Competencias de la carrera
+  const matchComp = texto.match(/\b(CE[1-6](?:\.[1-6])?|CG[1-3])\b/i);
+
+  // Detección de conceptos matemáticos comunes
+  const conceptosMat = [
+    'signo', 'signos', 'fraccion', 'fracciones', 'multiplicacion', 'division', 'inverso multiplicativo',
+    'tabla pitagorica', 'tablas de multiplicar', 'simplificar', 'irreductible', 'denominador', 'numerador',
+    'numero mixto', 'entero', 'enteros', 'algoritmo', 'funcion', 'lineal', 'afin', 'pendiente',
+    'grafico', 'grafica', 'ecuacion', 'proporcionalidad', 'valor fijo'
+  ];
+  const normalizado = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const terminosEncontrados = conceptosMat.filter(c => normalizado.includes(c));
+
+  // Detección de juicios de valor o auto-percepciones (para andamiar DIM1 y DIM3)
+  const tieneJuicio = /\b(estuve nervios|me puse nervios|se portaron bien|se portaron mal|fue un exito|me gusto|no me gusto|estuvo bien|estuvo mal|salio perfecto)\b/i.test(normalizado);
+
+  return {
+    minuto: matchMin ? matchMin[1] : null,
+    cita: matchCita ? matchCita[1] : null,
+    competencia: matchComp ? matchComp[1].toUpperCase() : null,
+    terminos: terminosEncontrados,
+    tieneJuicio
+  };
+}
+
+/**
+ * Genera sugerencias rápidas contextualizadas al contenido de la clase y a la dimensión
+ */
+function generarSugerenciasContextuales(paso, contenidoClase, pistas) {
+  const cNorm = (contenidoClase || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const esFracciones = cNorm.includes('fraccion') || cNorm.includes('signo') || cNorm.includes('multiplicacion') || cNorm.includes('division');
+  const esFunciones = cNorm.includes('funcion') || cNorm.includes('lineal') || cNorm.includes('afin') || cNorm.includes('algebra') || cNorm.includes('ecuacion');
+
+  if (esFracciones) {
+    switch (paso) {
+      case 1:
+        return [
+          "El propósito central fue comprender el algoritmo de la multiplicación de fracciones y la regla de signos.",
+          "Esperaba que relacionaran el inverso multiplicativo con la división de fracciones.",
+          "Selecciono el episodio donde surgió la duda sobre cómo operar con los signos de las fracciones."
+        ];
+      case 2:
+        return [
+          "Formulé una pregunta abierta sobre los signos y dos estudiantes dieron reglas contradictorias.",
+          "El practicante recordó la tabla en la pizarra mientras los alumnos completaban la guía.",
+          "Un estudiante afirmó textualmente que se conservaba el signo del mayor número."
+        ];
+      case 3:
+        return [
+          "El estudiante transfiere erróneamente la regla aditiva de números enteros a la multiplicación.",
+          "Muestra que memorizan una mecánica pero confunden la estructura aditiva con la multiplicativa.",
+          "El error revela que la regla de los signos no está fundamentada conceptualmente."
+        ];
+      case 4:
+        return [
+          "En el minuto indicado el estudiante dice textualmente: 'se conserva el signo del mayor número'.",
+          "En el minuto de la clase varios estudiantes preguntaron si en la división también se multiplica cruzado.",
+          "La evidencia en el audio muestra que la intervención en la pizarra cerró el debate en vez de abrirlo."
+        ];
+      case 5:
+        return [
+          "Identifico que entregué la regla en la pizarra inmediatamente sin permitir que la contrastaran entre pares.",
+          "Di por sabida la tabla pitagórica sin verificar si todos lograban calcular con autonomía.",
+          "Pude haber aprovechado la confusión para discutir la diferencia entre sumar y multiplicar con signos."
+        ];
+      case 6:
+        return [
+          "Se vincula con CE5.3 (formulación de preguntas mediadoras) y CE5.5 (uso formativo del error).",
+          "Me sitúo en Nivel 2 porque identifiqué la dificultad pero entregué la respuesta directamente.",
+          "Se articula con CE3.2 sobre el análisis sistemático de las respuestas escolares como evidencia."
+        ];
+      case 7:
+        return [
+          "Pude haber propuesto un contraejemplo numérico simple en la pizarra para que evaluaran su hipótesis.",
+          "Habría pedido que compararan en parejas antes de validar cuál regla corresponde a la multiplicación.",
+          "Pude solicitar que representaran el producto en una recta numérica o modelo gráfico de áreas."
+        ];
+      case 8:
+        return [
+          "En la próxima clase incluiré una consigna donde los alumnos deban justificar por qué se usa esa regla.",
+          "Implementaré un ticket de salida con una multiplicación y una adición para verificar que no confunden las reglas.",
+          "Verificaré en la grabación que dedique al menos 5 minutos a la argumentación entre pares antes de institucionalizar."
+        ];
+    }
+  }
+
+  if (esFunciones) {
+    switch (paso) {
+      case 1:
+        return [
+          "El propósito era modelar la situación con una función y discutir el significado del valor fijo.",
+          "Esperaba que identificaran la diferencia entre una relación directa y una afín mediante tablas.",
+          "Selecciono el episodio donde surgió la discrepancia entre las respuestas de los estudiantes."
+        ];
+      case 2:
+        return [
+          "Les pedí que explicaran cómo calcularon el total y dos estudiantes dieron resultados distintos.",
+          "Formulé una pregunta para que compararan los procedimientos de sus compañeros en parejas.",
+          "El estudiante reconoció que olvidó el cargo fijo después de escuchar a su compañera."
+        ];
+      case 3:
+        return [
+          "El estudiante confundió la tasa de cambio con el total, omitiendo el valor constante inicial.",
+          "Revela que comprenden el cálculo proporcional pero les cuesta integrar condiciones no proporcionales.",
+          "El error muestra un obstáculo didáctico frecuente al transitar de proporcionalidad directa a función afín."
+        ];
+      case 4:
+        return [
+          "En el minuto indicado el alumno explicita que multiplicó directamente sin sumar el cargo inicial.",
+          "En la discusión en parejas la compañera explicita que faltó considerar el punto de partida f(0).",
+          "La evidencia muestra que la interacción entre pares facilitó la detección del error conceptual."
+        ];
+      case 5:
+        return [
+          "Aunque el grupo pareció avanzar, en el cierre afirmé que 'todos comprendieron' sin verificar con evidencia.",
+          "Un estudiante propuso una estrategia recursiva sumando a la tabla, pero continué sin profundizar en ella.",
+          "No todos los estudiantes intervinieron activamente en la discusión de las representaciones gráficas."
+        ];
+      case 6:
+        return [
+          "Se vincula con CE5.4 (conexión de representaciones tabla-gráfico) y CE5.5 (uso del error).",
+          "Considero que alcancé Nivel 2 porque hubo mediación pero faltó comparar estrategias divergentes.",
+          "Se conecta con CE3.4: reconocer limitaciones de la propia apreciación frente al aprendizaje escolar."
+        ];
+      case 7:
+        return [
+          "Pude haber anotado las dos estrategias en la pizarra y pedir al curso que comparara su eficiencia.",
+          "En lugar de validar inmediatamente la fórmula, pude pedir que explicaran qué representaba cada término.",
+          "Habría sido valioso dedicar 5 minutos más a conectar la expresión algebraica con la gráfica en el plano."
+        ];
+      case 8:
+        return [
+          "En mi próxima clase solicitaré al menos dos procedimientos distintos antes de validar una respuesta.",
+          "Implementaré una tarjeta de salida (ticket de cierre) para recoger evidencia individual de comprensión.",
+          "Verificaré en la grabación que dedique al menos 3 minutos al cierre matemático institucionalizado."
+        ];
+    }
+  }
+
+  // Sugerencias pedagógicas generales alineadas con la rúbrica
+  const generales = SUGERENCIAS_POR_PASO[paso] || [
+    "Me gustaría profundizar en el análisis de este minuto de aula.",
+    "¿Qué indicador de la competencia CE5 o CE3 se relaciona con esto?",
+    "Quiero revisar qué evidencia discrepante emergió en este momento."
+  ];
+  return generales;
+}
+
+/**
+ * Genera la respuesta conversacional del chatbot para la reflexión guiada (8 pasos),
+ * articulando estrechamente el contenido de la clase con las dimensiones formativas de la rúbrica.
  */
 export function procesarTurnoReflexion(intervencion, mensajeUsuario, turnosAnteriores) {
-  const nTurnosUsuario = (turnosAnteriores || []).filter(t => t.r === "u").length + (mensajeUsuario ? 1 : 0);
-  
+  const respuestasUsuario = (turnosAnteriores || []).filter(t => t.r === "u");
+  const nTurnosUsuario = respuestasUsuario.length + (mensajeUsuario ? 1 : 0);
+
+  const tema = (intervencion && intervencion.contenido) ? intervencion.contenido.trim() : 'la tarea matemática';
+  const curso = (intervencion && intervencion.curso) ? intervencion.curso.trim() : 'tu curso';
+  const propositoPlan = (intervencion && intervencion.proposito) ? intervencion.proposito.trim() : '';
+
   // Determinar paso actual
   let pasoActual = 1;
   const ultChatbot = [...(turnosAnteriores || [])].reverse().find(t => t.r === "a");
   if (ultChatbot && ultChatbot.paso) {
     pasoActual = ultChatbot.paso;
-    // Si el usuario envió un mensaje sustantivo, avanzar paso
-    if (mensajeUsuario && mensajeUsuario.trim().length > 15 && pasoActual < 8) {
+    // Si el usuario envió un mensaje sustantivo, avanzar
+    if (mensajeUsuario && mensajeUsuario.trim().length > 12) {
       pasoActual++;
     }
   }
 
-  const pasoInfo = SECUENCIA_REFLEXION[pasoActual - 1];
+  // Analizar pistas del mensaje del usuario y de turnos previos
+  const pistasActuales = extraerPistasPedagogicas(mensajeUsuario);
+  
+  // Recopilar pistas acumuladas de toda la conversación
+  let minutoIdentificado = pistasActuales.minuto;
+  let citaIdentificada = pistasActuales.cita;
+  let competenciaIdentificada = pistasActuales.competencia;
+  
+  for (const t of respuestasUsuario) {
+    const p = extraerPistasPedagogicas(t.c);
+    if (!minutoIdentificado && p.minuto) minutoIdentificado = p.minuto;
+    if (!citaIdentificada && p.cita) citaIdentificada = p.cita;
+    if (!competenciaIdentificada && p.competencia) competenciaIdentificada = p.competencia;
+  }
+
   let respuestaTexto = "";
 
   switch (pasoActual) {
     case 1:
-      respuestaTexto = `Hola. Comencemos la reflexión sobre tu clase de Práctica Pedagógica III.\n\nPara partir (Paso 1: Reconstrucción), cuéntame: ¿Cuál era el propósito matemático central que esperabas promover con tus estudiantes en esta sesión y en qué episodio o momento específico de la grabación te gustaría focalizar nuestro análisis? Puedes señalar el minuto aproximado del audio si lo tienes a mano.`;
+      respuestaTexto = `Hola. Comencemos la reflexión profesional sobre tu clase de **${tema}** con **${curso}**.\n\n` +
+        `🎯 **Dimensión 1 de la Rúbrica: Foco en el Aprendizaje Matemático Escolar**\n` +
+        `En Práctica III, la meta formativa esperada (Nivel 3) es desplazar la mirada desde impresiones afectivas ("estuve nerviosa", "se portaron bien") hacia el **análisis del pensamiento, producciones y dificultades matemáticas de tus estudiantes** frente a la tarea.\n\n` +
+        `Para comenzar (Paso 1: Reconstrucción):\n` +
+        `¿Cuál era el propósito matemático central que te propusiste promover en esta sesión ${propositoPlan ? `(en tu plan registraste: "${propositoPlan}")` : ''}? Y específicamente: ¿En qué **episodio o momento concreto de la grabación** (señala el minuto aproximado del audio) te gustaría situar nuestro análisis, donde se observe un razonamiento, duda o estrategia clave de tus alumnos con ${tema}?`;
       break;
+
     case 2:
-      respuestaTexto = `Entendido. Ahora vayamos a los hechos concretos observables (Paso 2: Descripción).\n\nEn ese episodio que señalas: ¿Qué dijiste o hiciste tú exactamente, y qué respondieron o hicieron los estudiantes? Describe la interacción lo más apegado posible a la grabación, sin emitir juicios todavía sobre si estuvo bien o mal.`;
+      const anclajeMinuto = pistasActuales.minuto ? `alrededor del **minuto ${pistasActuales.minuto}**` : (minutoIdentificado ? `en el **minuto ${minutoIdentificado}**` : `en el momento clave que señalas`);
+      respuestaTexto = `Excelente encuadre. Situemos el foco de observación ${anclajeMinuto} de tu clase de ${tema}.\n\n` +
+        `📋 **Dimensiones 2 y 3: Descripción Fáctica y Rigor Observable**\n` +
+        `Para alcanzar el Nivel 3 esperado en la rúbrica, es fundamental reconstruir con precisión los hechos observables puros, distinguiendo con claridad lo que efectivamente ocurrió de interpretaciones o valoraciones subjetivas (no calificar aún si estuvo "bien" o "mal").\n\n` +
+        `Paso 2 (Descripción):\n` +
+        `Reconstruye detalladamente la interacción en ese episodio tal como quedó registrada en la grabación: ¿Qué consigna, pregunta o explicación formulaste tú exactamente? ¿Y qué respondieron, dijeron o hicieron los estudiantes en relación con el objeto matemático en juego?`;
       break;
+
     case 3:
-      respuestaTexto = `Muy claro. Ahora avancemos a la lectura didáctica (Paso 3: Interpretación del pensamiento escolar).\n\nMirando las respuestas de los estudiantes en ese momento: ¿Qué estrategia, razonamiento o concepción matemática subyace a lo que dijeron o hicieron? ¿Qué revela su intervención sobre cómo están comprendiendo el objeto matemático en juego?`;
+      const mencionConcepto = pistasActuales.terminos.length ? `(en torno a ${pistasActuales.terminos.slice(0, 2).join(' y ')})` : '';
+      respuestaTexto = `Muy clara y situada la descripción de la interacción ${mencionConcepto}.\n\n` +
+        `🧠 **Dimensión 3: Interpretación del Pensamiento y Obstáculos Cognitivos**\n` +
+        `En este paso avanzamos de "lo que ocurrió fáctico" a "por qué ocurrió". La rúbrica formativa busca que formules una hipótesis explicativa sobre los esquemas mentales y la lógica interna del razonamiento escolar.\n\n` +
+        `Paso 3 (Interpretación Didáctica):\n` +
+        `Mirando con lupa lo que dijeron o hicieron los estudiantes en ese instante: ¿Qué concepción matemática, regla intuitiva o conocimiento previo explica su respuesta? ¿Por qué crees que surge esa intervención? ¿Se trata de una confusión conceptual, una transferencia inadecuada de reglas aprendidas en otro contenido (por ejemplo de los enteros o la adición), o un obstáculo propio del aprendizaje de ${tema}?`;
       break;
+
     case 4:
-      respuestaTexto = `Bien interpretado. Ahora fundamentemos con rigor (Paso 4: Fundamentación en evidencia observable).\n\n¿Qué evidencias concretas del registro (palabras textuales, minutos específicos del audio o números de línea) sostienen la interpretación que acabas de hacer? Cita al menos un intercambio verbal o producción concreta de tu clase.`;
+      respuestaTexto = `Esa lectura didáctica es sumamente interesante y apunta al núcleo del aprendizaje matemático.\n\n` +
+        `🔎 **Dimensión 2: Sustento Riguroso en Evidencias Observables del Registro**\n` +
+        `Para que tu interpretación no quede en una impresión anecdótica y alcance el **Nivel 3 (Esperado en PPIII)**, la rúbrica exige respaldarla en fragmentos concretos, verificables y temporalmente localizados del registro de aula.\n\n` +
+        `Paso 4 (Fundamentación en Evidencia):\n` +
+        `¿Qué evidencia textual o producción concreta de tu grabación sostiene indiscutiblemente la interpretación que acabas de formular? Cita al menos un intercambio verbal textual de un estudiante (palabras exactas), el minuto específico del audio \`[mm:ss]\` o lo que quedó registrado en sus cuadernos/pizarra.`;
       break;
+
     case 5:
-      respuestaTexto = `Excelente ejercicio de fundamentación. Ahora miremos con lupa crítica (Paso 5: Contraste y evidencias discrepantes).\n\n¿Identificas alguna evidencia en el registro que obligue a matizar o cuestionar tu conclusión inicial? ¿Hubo alguna dificultad, respuesta no comprendida o momento donde se dio por sabido algo sin verificarlo fehacientemente con el curso?`;
+      const citaMencion = pistasActuales.cita ? `la cita textual ("${pistasActuales.cita}")` : (pistasActuales.minuto ? `la evidencia situada en el minuto ${pistasActuales.minuto}` : 'la evidencia presentada');
+      respuestaTexto = `Excelente fundamentación. Integrar ${citaMencion} le da a tu análisis un respaldo empírico sólido y riguroso.\n\n` +
+        `⚖️ **Dimensión 4: Reconocimiento de Tensiones y Oportunidades No Aprovechadas**\n` +
+        `La formación reflexiva en Práctica III valora de forma primordial la capacidad de mirar la propia clase con honestidad crítica, superando visiones complacientes para identificar momentos donde una oportunidad de aprendizaje se vio limitada o tensionada.\n\n` +
+        `Paso 5 (Contraste y Evidencias Discrepantes):\n` +
+        `Mirando críticamente este episodio en ${tema}: ¿Identificas alguna evidencia que obligue a matizar o cuestionar tu apreciación inicial? Por ejemplo: ¿Hubo algún momento donde validaste rápidamente una respuesta sin verificar si todo el curso la comprendía? ¿Entregaste la regla directamente en la pizarra en lugar de indagar en el error? ¿O algún estudiante planteó una duda que quedó sin profundizar?`;
       break;
+
     case 6:
-      respuestaTexto = `Esa mirada honesta es clave para aprender de la propia práctica. Ahora conectemos con tu perfil profesional (Paso 6: Relación curricular).\n\n¿Con qué competencia de la carrera (por ejemplo CE5 en proyectos didácticos de matemática, o CE3 en análisis de la práctica) relacionas este episodio? ¿Consideras que tu actuación en este momento fue incipiente (1), en el nivel esperado para Práctica III (2) o avanzada (3)? Justifica brevemente.`;
+      respuestaTexto = `Esa mirada honesta y autocrítica es justamente lo que distingue a un profesor reflexivo comprometido con el aprendizaje genuino de sus estudiantes.\n\n` +
+        `🎓 **Perfil de Egreso: Articulación con Competencias Formativas de Práctica III**\n` +
+        `Conectemos tu análisis con las competencias nucleares de tu carrera:\n` +
+        `• **CE5 (Diseño y Mediación de Tareas Matemáticas):** Formulación de preguntas de argumentación (CE5.3), conexiones entre representaciones (CE5.4) y uso formativo del error (CE5.5).\n` +
+        `• **CE3 (Análisis de la Práctica Basado en Evidencia):** Uso de evidencias del registro (CE3.2) y reconocimiento de discrepancias (CE3.4).\n\n` +
+        `Paso 6 (Relación Curricular):\n` +
+        `¿Con qué competencia e indicador específico (por ejemplo CE5.3 o CE5.5) vinculas este episodio de aula? Y con base en la evidencia analizada, ¿en qué nivel de logro te sitúas en esta actuación (Nivel 1 Inicial, Nivel 2 Esperado PPIII, o Nivel 3 Avanzado)? Justifica brevemente tu autoevaluación.`;
       break;
+
     case 7:
-      respuestaTexto = `Muy bien fundamentado. Ahora pensemos en la toma de decisiones didácticas (Paso 7: Alternativas de actuación).\n\nSi volvieras a estar exactamente en ese minuto del aula con tus estudiantes: ¿Qué otra intervención docente, pregunta mediadora o representación matemática podrías haber planteado? ¿Qué efecto diferente habría tenido en el debate de los escolares?`;
+      const compAlusion = pistasActuales.competencia || competenciaIdentificada || 'las competencias de mediación docente';
+      respuestaTexto = `Muy coherente tu articulación con **${compAlusion}**: reconocer dónde se ubica la propia práctica con base en evidencia es la base para la mejora continua.\n\n` +
+        `💡 **Dimensiones 4 y 5: Reconstrucción y Toma de Decisiones Didácticas Alternativas**\n` +
+        `Reflexionar no es solo diagnosticar el pasado, sino desarrollar la flexibilidad didáctica para anticipar otras formas de intervenir frente a la misma contingencia de aula.\n\n` +
+        `Paso 7 (Alternativas Didácticas de Mediación):\n` +
+        `Si volvieras a estar exactamente en ese minuto de tu clase de ${tema} con tus estudiantes de ${curso}: ¿Qué otra intervención docente, pregunta mediadora, contraejemplo o consigna de trabajo en parejas podrías haber propuesto en lugar de entregar la solución? ¿Qué impacto pedagógico distinto habría generado en el debate y la argumentación de los escolares?`;
       break;
+
     case 8:
-      respuestaTexto = `Llegamos al momento de proyectar el crecimiento profesional (Paso 8: Proyección de mejora verificable).\n\nFormula una meta concreta y observable para tu próxima intervención de aula: ¿Qué acción pedagógica específica implementarás y qué evidencia buscarás observar en la grabación de tu siguiente clase para verificar que se produjo una mejora? Cuando la formules, podrás generar tu borrador de reflexión para tu revisión y posterior aprobación.`;
+      respuestaTexto = `Esa alternativa que propones tiene un valor didáctico enorme: abre el espacio para que los propios estudiantes sean protagonistas de la argumentación matemática.\n\n` +
+        `🚀 **Dimensión 5: Formulación de Metas de Transformación Situadas y Verificables**\n` +
+        `Llegamos al momento cumbre del ciclo reflexivo. En la rúbrica formativa, una meta de Nivel 3 o 4 se caracteriza por ser **situada y observable** (superando declaraciones genéricas como "explicar mejor" o "tener más paciencia"), estableciendo con precisión con qué evidencia del aula comprobarás que se produjo una mejora.\n\n` +
+        `Paso 8 (Proyección de Mejora):\n` +
+        `Formula una meta concreta para tu próxima intervención de aula: ¿Qué acción pedagógica o dispositivo específico implementarás (por ejemplo: formular al menos dos preguntas de justificación antes de validar, o aplicar un ticket de salida integrador)? ¿Y qué evidencia observable concreta buscarás en la grabación o producciones de tu siguiente clase para verificar que se produjo el avance?`;
       break;
+
     default:
-      respuestaTexto = `Hemos completado los 8 pasos de la reflexión guiada basada en evidencias de tu práctica. Revisa tu borrador organizado en la parte inferior, realiza los ajustes que estimes necesarios y haz clic en "Aprobar borrador" para que quede oficialmente incorporado en tu reporte y disponible para la revisión de tu formador/a.`;
+      // Paso 9+: Síntesis formativa integral del ciclo completado
+      respuestaTexto = `🎉 **¡Felicitaciones! Has completado exitosamente la secuencia reflexiva de 8 pasos basada en evidencias.**\n\n` +
+        `Tu reflexión ha transitado de manera rigurosa por las **5 Dimensiones de la Rúbrica Formativa de Práctica Pedagógica III**:\n` +
+        `1. ✓ **DIM1 · Foco en el Aprendizaje Matemático:** Centrado en el razonamiento y pensamiento escolar frente a ${tema}.\n` +
+        `2. ✓ **DIM2 · Sustento en Evidencias Observables:** Respaldado con marcas temporales del audio y citas textuales concretas.\n` +
+        `3. ✓ **DIM3 · Rigor Epistémico:** Diferenciando lo fáctico ocurrido en aula de las hipótesis didácticas explicativas.\n` +
+        `4. ✓ **DIM4 · Mirada Crítica y Reconstructiva:** Identificando tensiones, oportunidades no aprovechadas y mediaciones alternativas.\n` +
+        `5. ✓ **DIM5 · Metas Situadas de Transformación:** Proyectando acciones pedagógicas concretas y evidencias verificables para tu próxima sesión.\n\n` +
+        `📋 **Próximo Paso:**\n` +
+        `En la parte inferior de la pantalla hemos compilado automáticamente tu **Borrador de Reflexión Estructurada** con tus respuestas de cada paso. Revisa tu texto, realiza cualquier afinamiento que estimes pertinente y haz clic en **"Aprobar borrador"** para consolidar oficialmente tu reflexión en tu portafolio y dejarla lista para la evaluación de tu formador/a.`;
       break;
   }
 
-  const chipsSugeridos = SUGERENCIAS_POR_PASO[pasoActual] || [
-    "Me gustaría profundizar en el análisis de este minuto.",
-    "¿Qué estándar de la profesión docente se vincula con esto?",
-    "Quiero revisar qué evidencia discrepante observó el sistema."
-  ];
+  // Generar chips dinámicos y situados para el paso
+  const chipsContextuales = generarSugerenciasContextuales(Math.min(pasoActual, 8), tema, pistasActuales);
+  const pasoTitulo = pasoActual <= 8 ? SECUENCIA_REFLEXION[pasoActual - 1].nombre : "Síntesis y Aprobación";
 
   return {
-    paso: pasoActual,
-    nombrePaso: pasoInfo.nombre,
+    paso: Math.min(pasoActual, 8),
+    pasoReal: pasoActual,
+    nombrePaso: pasoTitulo,
     mensaje: respuestaTexto,
-    sugerencias: chipsSugeridos,
+    sugerencias: chipsContextuales,
     puedeGenerarBorrador: nTurnosUsuario >= 4
   };
 }
