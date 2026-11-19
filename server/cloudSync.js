@@ -14,8 +14,8 @@ let cloudStatus = {
 export function getCloudClient() {
   if (cloudClient) return cloudClient;
 
-  const url = process.env.TURSO_DATABASE_URL;
-  const authToken = process.env.TURSO_AUTH_TOKEN;
+  let url = (process.env.TURSO_DATABASE_URL || '').trim().replace(/^["']|["']$/g, '');
+  let authToken = (process.env.TURSO_AUTH_TOKEN || '').trim().replace(/^["']|["']$/g, '');
 
   cloudStatus.url = url || null;
   cloudStatus.configured = !!(url && authToken);
@@ -34,8 +34,9 @@ export function getCloudClient() {
   }
 
   try {
+    const finalUrl = url.startsWith('http') || url.startsWith('libsql') ? url : `https://${url}`;
     cloudClient = createClient({
-      url: url.startsWith('http') || url.startsWith('libsql') ? url : `https://${url}`,
+      url: finalUrl,
       authToken
     });
     return cloudClient;
@@ -335,8 +336,12 @@ export async function initCloudSync(localDb) {
     console.log(`[CloudSync] ✓ Sincronización exitosa con Turso: ${cloudInts.rows.length} en nube, ${allLocalInts.length} en local.`);
   } catch (err) {
     cloudStatus.connected = false;
-    cloudStatus.error = err.message;
-    console.error('[CloudSync] Error durante sincronización con Turso:', err);
+    let errMsg = err.message || '';
+    if (errMsg.includes('400')) {
+      errMsg = 'Token de Turso inválido o malformado (HTTP 400 - JWT InvalidToken). Genera un token nuevo con: "turso db tokens create observa-retro-echandia" y actualízalo en TURSO_AUTH_TOKEN en Render.';
+    }
+    cloudStatus.error = errMsg;
+    console.error('[CloudSync] Error durante sincronización con Turso:', errMsg);
   }
 }
 

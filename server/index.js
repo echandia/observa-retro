@@ -241,7 +241,11 @@ const server = createServer(async (req, res) => {
       error: status.error,
       url: status.url,
       provider: status.connected ? 'Turso SQLite Cloud' : 'SQLite Local (efímero en Render sin Turso)',
-      warning: (status.url || '').includes('tucuenta') ? 'La variable TURSO_DATABASE_URL contiene el texto de ejemplo "tucuenta". Debes reemplazarla en Render por tu subdominio real de Turso.' : null
+      warning: (status.url || '').includes('tucuenta')
+        ? 'La variable TURSO_DATABASE_URL contiene el texto de ejemplo "tucuenta". Debes reemplazarla en Render por tu subdominio real de Turso.'
+        : (!status.connected && status.configured && status.error)
+          ? `Persistencia externa inactiva: ${status.error}`
+          : null
     });
   }
 
