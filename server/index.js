@@ -21,7 +21,7 @@ import {
 import { RUBRICA_REFLEXION, calcularResumenReflexion } from './reflectionEval.js';
 import { getTranscriptionConfig, saveTranscriptionConfig, transcribirAudio } from './transcriptionService.js';
 import { importarListaCurso, sincronizarListasDeCursos } from './courseImporter.js';
-import { initCloudSync, pushCloudQuery, isCloudEnabled } from './cloudSync.js';
+import { initCloudSync, pushCloudQuery, isCloudEnabled, getCloudClient } from './cloudSync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -239,6 +239,27 @@ const server = createServer(async (req, res) => {
       provider: isCloudEnabled() ? 'Turso SQLite Cloud' : 'SQLite Local (efímero en Render sin Turso)',
       instructions: !isCloudEnabled() ? 'Agrega TURSO_DATABASE_URL y TURSO_AUTH_TOKEN en el panel de Render para persistencia permanente externa.' : 'Persistencia externa activa y asegurada.'
     });
+  }
+
+  // Diagnóstico directo de Turso Cloud
+  if (pathname === '/api/cloud-sync/debug' && method === 'GET') {
+    const client = getCloudClient();
+    if (!client) return sendJson(res, 200, { ok: false, error: 'No cloud client configurado' });
+    try {
+      const allTables = await client.execute("SELECT name FROM sqlite_master WHERE type='table'");
+      const ints = await client.execute('SELECT id, user_id, fecha, curso, contenido, audio_filename, n_lineas, creado_at, actualizado_at FROM intervenciones');
+      const evals = await client.execute('SELECT * FROM evaluaciones_reflexivas');
+      const users = await client.execute('SELECT id, email, name, role FROM users');
+      return sendJson(res, 200, {
+        ok: true,
+        tursoTables: allTables.rows.map(t => t.name),
+        tursoIntervenciones: ints.rows,
+        tursoEvaluaciones: evals.rows,
+        tursoUsersCount: users.rows.length
+      });
+    } catch (e) {
+      return sendJson(res, 500, { ok: false, error: e.message });
+    }
   }
 
   // ============================================================
