@@ -100,7 +100,7 @@ async function runAudit() {
   const intListData = await intListRes.json();
   assert(intListRes.status === 200 && intListData.intervenciones.length > 0, `Intervenciones encontradas en el panel (${intListData.intervenciones.length} registros)`);
 
-  const firstInt = intListData.intervenciones[0];
+  const firstInt = intListData.intervenciones.find(i => i.user_id === 'est-21707474') || intListData.intervenciones[0];
   assert('tienePlanificacion' in firstInt && 'nTurnosReflexion' in firstInt, "Campos de resumen de planificación y chatbot en el listado");
 
   // Detalle de intervención para estudiante (debe ocultar evaluación interna)
